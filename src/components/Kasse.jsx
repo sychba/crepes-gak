@@ -10,6 +10,27 @@ const AVAILABLE_TOPPINGS = [
   'Schinken'
 ];
 
+const getFriendlyErrorMessage = (rawError) => {
+  if (!rawError) return 'Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.';
+  
+  const msg = rawError.toString();
+  
+  if (msg.includes('gesperrt')) {
+    return 'Dieses Gerät wurde für weitere Bestellungen gesperrt. Bitte wende dich an das Personal.';
+  }
+  if (msg.includes('Bestell-Limit erreicht') || msg.includes('2 Bestellungen pro Stunde')) {
+    return 'Bestell-Limit erreicht. Du kannst maximal 2 Bestellungen pro Stunde aufgeben.';
+  }
+  if (msg.includes('Maximal 10 Produkte') || msg.includes('10 Produkte pro Bestellung erlaubt')) {
+    return 'Maximal 10 Produkte pro Bestellung erlaubt (Wasser ist unbegrenzt).';
+  }
+  if (msg.includes('Validator') || msg.includes('ArgumentValidationError') || msg.includes('extra field')) {
+    return 'Server-Konfigurationsfehler: Bitte stelle sicher, dass das neueste Convex-Schema deployed ist (npx convex deploy).';
+  }
+  
+  return msg;
+};
+
 export default function Kasse({ token }) {
   const products = useQuery(api.products.list);
   const createOrder = useMutation(api.orders.create);
@@ -19,6 +40,7 @@ export default function Kasse({ token }) {
   const [customerClass, setCustomerClass] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [successOrder, setSuccessOrder] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(null);
 
   // Customization modal states
   const [customizingProduct, setCustomizingProduct] = useState(null);
@@ -118,12 +140,12 @@ export default function Kasse({ token }) {
   const handleCheckout = async (e) => {
     e.preventDefault();
     if (!customerName.trim()) {
-      alert('Bitte gib einen Kundennamen ein.');
+      setErrorMessage('Bitte gib einen Kundennamen ein.');
       return;
     }
 
     if (cart.length === 0) {
-      alert('Der Warenkorb ist leer.');
+      setErrorMessage('Der Warenkorb ist leer.');
       return;
     }
 
@@ -132,7 +154,7 @@ export default function Kasse({ token }) {
 
     // Watchdog timer to prevent UI lockup if the server or connection is offline/slow
     const watchdog = setTimeout(() => {
-      alert('Die Verbindung zum Server dauert ungewöhnlich lange. Bitte stelle sicher, dass eine aktive Internetverbindung besteht und der Server erreichbar ist.');
+      setErrorMessage('Die Verbindung zum Server dauert ungewöhnlich lange. Bitte stelle sicher, dass eine aktive Internetverbindung besteht und der Server erreichbar ist.');
       setSubmitting(false);
     }, 8000);
 
@@ -160,7 +182,7 @@ export default function Kasse({ token }) {
     } catch (err) {
       clearTimeout(watchdog);
       console.error(err);
-      alert('Fehler beim Buchen der Bestellung: ' + (err.message || err));
+      setErrorMessage(getFriendlyErrorMessage(err.message || err));
       setSubmitting(false);
     }
   };
@@ -496,6 +518,24 @@ export default function Kasse({ token }) {
                 Hinzufügen
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error Modal */}
+      {errorMessage && (
+        <div className="cart-drawer-overlay" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 300 }} onClick={() => setErrorMessage(null)}>
+          <div className="login-container" style={{ width: '100%', maxWidth: '420px', margin: '0 1rem', textAlign: 'center', border: '1px solid rgba(239, 68, 68, 0.2)', animation: 'bounce-in 0.3s ease-out' }} onClick={(e) => e.stopPropagation()}>
+            <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>⚠️</span>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', marginBottom: '0.75rem', color: '#ef4444' }}>
+              Hinweis
+            </h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', lineHeight: '1.5', marginBottom: '1.5rem' }}>
+              {errorMessage}
+            </p>
+            <button className="btn btn-primary" onClick={() => setErrorMessage(null)} style={{ width: '100%', backgroundColor: '#ef4444', borderColor: '#ef4444' }}>
+              Schließen
+            </button>
           </div>
         </div>
       )}
