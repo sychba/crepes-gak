@@ -93,6 +93,14 @@ export default function OrderConfirmation({ orderId, navigate }) {
             <span className="receipt-details-label">Bestellart:</span>
             <span className="receipt-details-value">{order.type === 'kasse' ? 'Vor Ort (Kasse)' : 'Online Bestellung'}</span>
           </div>
+          {order.type === 'online' && (
+            <div className="receipt-details-row">
+              <span className="receipt-details-label">Lieferart:</span>
+              <span className="receipt-details-value" style={{ fontWeight: 'bold', color: order.deliveryMethod === 'Lieferung' ? 'var(--accent)' : 'inherit' }}>
+                {order.deliveryMethod || 'Abholung'}
+              </span>
+            </div>
+          )}
         </div>
 
         {/* Items List */}

@@ -57,6 +57,7 @@ export const create = mutation({
     customerName: v.string(),
     customerClass: v.string(),
     type: v.string(), // 'online' | 'kasse'
+    deliveryMethod: v.optional(v.string()), // 'Abholung' | 'Lieferung'
     items: v.array(
       v.object({
         productId: v.string(),
@@ -156,6 +157,7 @@ export const create = mutation({
       customerClass: args.customerClass || "",
       status: "Neu",
       type: args.type,
+      deliveryMethod: args.deliveryMethod || "Abholung",
       createdAt: now,
       updatedAt: now,
       items: orderItems,

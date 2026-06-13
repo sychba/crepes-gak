@@ -18,6 +18,7 @@ export default defineSchema({
     customerClass: v.string(),
     status: v.string(), // "Neu" | "Zubereitung" | "Fertig" | "Ausgeliefert"
     type: v.string(), // "online" | "kasse"
+    deliveryMethod: v.optional(v.string()), // "Abholung" | "Lieferung"
     createdAt: v.number(),
     updatedAt: v.number(),
     items: v.array(

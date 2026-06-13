@@ -1,12 +1,113 @@
-import { useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
+
+// Premium Inline SVGs
+const InboxIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '0.35rem' }}>
+    <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>
+    <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+  </svg>
+);
+
+const ChefIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '0.35rem' }}>
+    <path d="M6 18h12V9c0-3.3-2.7-6-6-6S6 5.7 6 9v9z"/>
+    <path d="M3 21h18"/>
+  </svg>
+);
+
+const BellIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '0.35rem' }}>
+    <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+    <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+  </svg>
+);
+
+const CheckIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: '0.35rem' }}>
+    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+    <polyline points="22 4 12 14.01 9 11.01"/>
+  </svg>
+);
 
 export default function Kueche({ token }) {
   const orders = useQuery(api.orders.listAll, { password: token });
   const updateStatus = useMutation(api.orders.updateStatus);
   const deleteOrder = useMutation(api.orders.deleteOrder);
+  
   const prevOrdersRef = useRef([]);
+  const isFirstLoadRef = useRef(true);
+  const [audioEnabled, setAudioEnabled] = useState(false);
+
+  // Periodically verify the audio context state
+  useEffect(() => {
+    const checkState = () => {
+      if (window.sharedAudioContext && window.sharedAudioContext.state === 'running') {
+        setAudioEnabled(true);
+      } else {
+        setAudioEnabled(false);
+      }
+    };
+    
+    checkState();
+    const interval = setInterval(checkState, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Initialize and auto-resume audio context on user gesture
+  useEffect(() => {
+    const handleGesture = () => {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        if (!window.sharedAudioContext) {
+          window.sharedAudioContext = new AudioContext();
+        }
+        if (window.sharedAudioContext.state === 'suspended') {
+          window.sharedAudioContext.resume().then(() => {
+            setAudioEnabled(true);
+          });
+        } else {
+          setAudioEnabled(true);
+        }
+      } catch (e) {
+        console.warn(e);
+      }
+    };
+
+    window.addEventListener('click', handleGesture);
+    window.addEventListener('keydown', handleGesture);
+    return () => {
+      window.removeEventListener('click', handleGesture);
+      window.removeEventListener('keydown', handleGesture);
+    };
+  }, []);
+
+  // Enable audio explicitly (via banner click)
+  const enableAudio = () => {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContext) return;
+      if (!window.sharedAudioContext) {
+        window.sharedAudioContext = new AudioContext();
+      }
+      const ctx = window.sharedAudioContext;
+      if (ctx.state === 'suspended') {
+        ctx.resume().then(() => {
+          setAudioEnabled(true);
+          playNewOrderSound();
+        }).catch(err => {
+          console.warn('Fehler beim Aktivieren des Audio-Contexts:', err);
+        });
+      } else {
+        setAudioEnabled(true);
+        playNewOrderSound();
+      }
+    } catch (e) {
+      console.warn(e);
+    }
+  };
 
   // Synthesize a pleasant "Ding" sound for new orders using Web Audio API
   const playNewOrderSound = () => {
@@ -14,33 +115,46 @@ export default function Kueche({ token }) {
       const AudioContext = window.AudioContext || window.webkitAudioContext;
       if (!AudioContext) return;
       
-      const ctx = new AudioContext();
+      if (!window.sharedAudioContext) {
+        window.sharedAudioContext = new AudioContext();
+      }
+      const ctx = window.sharedAudioContext;
       
-      // Tone 1 (E5)
-      const osc1 = ctx.createOscillator();
-      const gain1 = ctx.createGain();
-      osc1.type = 'sine';
-      osc1.frequency.setValueAtTime(659.25, ctx.currentTime); // E5
-      gain1.gain.setValueAtTime(0.12, ctx.currentTime);
-      gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-      osc1.connect(gain1);
-      gain1.connect(ctx.destination);
-      osc1.start();
-      osc1.stop(ctx.currentTime + 0.5);
+      const playTone = () => {
+        // Tone 1 (E5)
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(659.25, ctx.currentTime); // E5
+        gain1.gain.setValueAtTime(0.12, ctx.currentTime);
+        gain1.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.start();
+        osc1.stop(ctx.currentTime + 0.5);
 
-      // Tone 2 (A5) slightly delayed
-      setTimeout(() => {
-        const osc2 = ctx.createOscillator();
-        const gain2 = ctx.createGain();
-        osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(880.00, ctx.currentTime); // A5
-        gain2.gain.setValueAtTime(0.15, ctx.currentTime);
-        gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
-        osc2.connect(gain2);
-        gain2.connect(ctx.destination);
-        osc2.start();
-        osc2.stop(ctx.currentTime + 0.8);
-      }, 120);
+        // Tone 2 (A5) slightly delayed
+        setTimeout(() => {
+          const osc2 = ctx.createOscillator();
+          const gain2 = ctx.createGain();
+          osc2.type = 'sine';
+          osc2.frequency.setValueAtTime(880.00, ctx.currentTime); // A5
+          gain2.gain.setValueAtTime(0.15, ctx.currentTime);
+          gain2.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+          osc2.connect(gain2);
+          gain2.connect(ctx.destination);
+          osc2.start();
+          osc2.stop(ctx.currentTime + 0.8);
+        }, 120);
+      };
+
+      if (ctx.state === 'suspended') {
+        ctx.resume().then(() => {
+          playTone();
+        });
+      } else {
+        playTone();
+      }
     } catch (err) {
       console.warn('Web Audio API not allowed or supported yet:', err);
     }
@@ -50,14 +164,18 @@ export default function Kueche({ token }) {
   useEffect(() => {
     if (orders === undefined) return;
     
-    if (prevOrdersRef.current.length > 0) {
-      const newOrders = orders.filter(order => 
-        order.status === 'Neu' && 
-        !prevOrdersRef.current.some(prevOrder => prevOrder.id === order.id)
-      );
-      if (newOrders.length > 0) {
-        playNewOrderSound();
-      }
+    if (isFirstLoadRef.current) {
+      isFirstLoadRef.current = false;
+      prevOrdersRef.current = orders;
+      return;
+    }
+
+    const newOrders = orders.filter(order => 
+      order.status === 'Neu' && 
+      !prevOrdersRef.current.some(prevOrder => prevOrder.id === order.id)
+    );
+    if (newOrders.length > 0) {
+      playNewOrderSound();
     }
     prevOrdersRef.current = orders;
   }, [orders]);
@@ -103,20 +221,6 @@ export default function Kueche({ token }) {
     return null;
   };
 
-  // Smart feature: Summarize ingredients/products needed for "Neu" and "Zubereitung" states
-  const getBatchSummary = () => {
-    if (!orders) return [];
-    const counts = {};
-    orders
-      .filter(order => order.status === 'Neu' || order.status === 'Zubereitung')
-      .forEach(order => {
-        order.items.forEach(item => {
-          counts[item.productName] = (counts[item.productName] || 0) + item.quantity;
-        });
-      });
-    return Object.entries(counts);
-  };
-
   if (orders === undefined) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh', flexDirection: 'column', gap: '1rem' }}>
@@ -131,96 +235,145 @@ export default function Kueche({ token }) {
   const ordersReady = orders.filter(o => o.status === 'Fertig');
   const ordersDone = orders.filter(o => o.status === 'Ausgeliefert');
 
-  const batchSummary = getBatchSummary();
-
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h2 style={{ fontFamily: 'var(--font-display)' }}>🍳 Küche (Bestellungsübersicht - Echtzeit)</h2>
-        <button 
-          className="btn btn-secondary" 
-          onClick={playNewOrderSound} 
-          style={{ fontSize: '0.85rem', padding: '0.4rem 1rem' }}
+      {/* Alert banner if audio context is suspended */}
+      {!audioEnabled && (
+        <div 
+          onClick={enableAudio}
+          style={{ 
+            backgroundColor: 'rgba(245, 158, 11, 0.15)', 
+            border: '1px solid #f59e0b', 
+            borderRadius: '12px', 
+            padding: '0.85rem 1.25rem', 
+            marginBottom: '1.5rem', 
+            textAlign: 'center', 
+            cursor: 'pointer',
+            animation: 'pulse 2s infinite',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.75rem',
+            color: '#f59e0b',
+            fontWeight: 'bold'
+          }}
         >
-          🔊 Ton testen
-        </button>
-      </div>
+          <span>🔇 Sound ist inaktiv! Klicke hier, um den Benachrichtigungston bei neuen Bestellungen zu aktivieren.</span>
+          <button 
+            className="btn btn-primary" 
+            style={{ 
+              fontSize: '0.75rem', 
+              padding: '0.25rem 0.75rem', 
+              backgroundColor: '#f59e0b', 
+              borderColor: '#f59e0b', 
+              color: '#000', 
+              borderRadius: '6px',
+              fontWeight: 800
+            }}
+          >
+            Aktivieren
+          </button>
+        </div>
+      )}
 
-      {/* Smart Ingredient / Baking Batch Summary */}
-      <div className="kitchen-batch-panel">
-        <h3 className="kitchen-batch-title">
-          <span>📊 Back-Zusammenfassung</span>
-          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', fontWeight: 400 }}>
-            (Produkte in Warteschlange & Zubereitung)
+      {/* Küche Header Area */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+        <h2 style={{ fontFamily: 'var(--font-display)', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          🍳 Küche (Bestellungsübersicht)
+        </h2>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <span 
+            style={{ 
+              fontSize: '0.8rem', 
+              color: audioEnabled ? 'var(--status-fertig)' : '#ef4444',
+              backgroundColor: audioEnabled ? 'var(--status-fertig-bg)' : 'rgba(239, 68, 68, 0.12)',
+              border: `1px solid ${audioEnabled ? 'rgba(16, 185, 129, 0.2)' : 'rgba(239, 68, 68, 0.2)'}`,
+              padding: '0.3rem 0.75rem',
+              borderRadius: '6px',
+              fontWeight: 'bold',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.35rem'
+            }}
+          >
+            {audioEnabled ? '🔊 Sound aktiv' : '🔇 Sound inaktiv'}
           </span>
-        </h3>
-        {batchSummary.length === 0 ? (
-          <div style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>
-            Keine ausstehenden Bestellungen. Alles abgearbeitet!
-          </div>
-        ) : (
-          <div className="kitchen-batch-grid">
-            {batchSummary.map(([name, count]) => (
-              <div key={name} className="kitchen-batch-card">
-                <span className="kitchen-batch-card-name">{name}</span>
-                <span className="kitchen-batch-card-count">{count}</span>
-              </div>
-            ))}
-          </div>
-        )}
+          <button 
+            className="btn btn-secondary" 
+            onClick={playNewOrderSound} 
+            style={{ fontSize: '0.85rem', padding: '0.4rem 1rem' }}
+          >
+            🔊 Ton testen
+          </button>
+        </div>
       </div>
 
       {/* Kitchen Columns Kanban Board */}
       <div className="kitchen-board">
         
-        {/* Column 1: Neu (Oldest first) */}
-        <div className="kitchen-column neu-col">
+        {/* Column 1: Neu */}
+        <div className={`kitchen-column neu-col ${ordersNeu.length === 0 ? 'collapsed' : ''}`}>
           <div className="kitchen-column-header">
-            <span className="kitchen-column-title">📥 Neu</span>
+            <span className="kitchen-column-title">
+              <InboxIcon />
+              <span>Neu</span>
+            </span>
             <span className="kitchen-column-count">{ordersNeu.length}</span>
           </div>
           {ordersNeu.map(order => {
             const minutes = getMinutesElapsed(order.createdAt);
             return (
-              <div key={order.id} className="kitchen-order-card">
-                <div className="kitchen-order-header">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                    <span className="kitchen-order-id">{order.id}</span>
-                    <span className={`kitchen-order-type-badge ${order.type}`}>{order.type}</span>
-                  </div>
-                  <span 
-                    className="kitchen-order-time"
-                    style={{ 
-                      color: minutes >= 8 ? '#f87171' : 'var(--text-secondary)',
-                      fontWeight: minutes >= 8 ? 'bold' : 'normal'
-                    }}
-                  >
+              <div 
+                key={order.id} 
+                className={`kitchen-order-card ${order.deliveryMethod === 'Lieferung' ? 'delivery-order' : ''}`}
+              >
+                <div className="card-top-row">
+                  <span className={`elapsed-time ${minutes >= 8 ? 'critical' : minutes >= 4 ? 'warning' : ''}`}>
                     vor {minutes} Min.
                   </span>
+                  <div className="card-badges">
+                    {order.deliveryMethod === 'Lieferung' && (
+                      <span className="delivery-badge-mini">🚗 LIEFERUNG</span>
+                    )}
+                    <span className={`type-badge-mini ${order.type}`}>{order.type}</span>
+                  </div>
                 </div>
-                <div>
-                  <div className="kitchen-order-customer">{order.customerName}</div>
-                  {order.customerClass && <span className="kitchen-order-class">{order.customerClass}</span>}
-                </div>
-                <div className="kitchen-order-items">
+
+                <div className="card-items-compact">
                   {order.items.map((item, idx) => (
-                    <div key={idx} className="kitchen-order-item">
-                      <span>{item.productName}</span>
-                      <span className="kitchen-order-item-qty">x{item.quantity}</span>
+                    <div key={idx} className="card-item-row">
+                      <span className="item-name-qty">
+                        <strong className="item-qty">{item.quantity}x</strong> {item.productName}
+                      </span>
                     </div>
                   ))}
                 </div>
-                <div className="kitchen-order-footer">
+
+                <div className="card-footer-info">
+                  <div className="customer-row">
+                    <span className="customer-name">{order.customerName}</span>
+                    <span className="ticket-code">#{order.id.replace('C-', '')}</span>
+                  </div>
+                  {order.customerClass && (
+                    <div className={`destination-label ${order.deliveryMethod === 'Lieferung' ? 'delivery-dest' : ''}`}>
+                      {order.deliveryMethod === 'Lieferung' ? `📍 Raum: ${order.customerClass}` : `Klasse/Ort: ${order.customerClass}`}
+                    </div>
+                  )}
+                </div>
+
+                <div className="card-actions">
                   <button 
-                    className="btn btn-danger" 
-                    style={{ padding: '0.35rem 0.65rem', borderRadius: '6px' }}
+                    className="btn-trash-icon" 
+                    title="Bestellung löschen"
                     onClick={() => handleDeleteOrder(order.id)}
                   >
-                    🗑️
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
                   </button>
                   <button 
-                    className="btn btn-primary" 
-                    style={{ padding: '0.35rem 1rem', fontSize: '0.85rem', color: '#000', borderRadius: '6px' }}
+                    className="btn-action-primary" 
                     onClick={() => handleUpdateStatus(order.id, getNextStatus(order.status))}
                   >
                     Backen ➔
@@ -232,130 +385,215 @@ export default function Kueche({ token }) {
         </div>
 
         {/* Column 2: Zubereitung */}
-        <div className="kitchen-column prep-col">
+        <div className={`kitchen-column prep-col ${ordersPrep.length === 0 ? 'collapsed' : ''}`}>
           <div className="kitchen-column-header">
-            <span className="kitchen-column-title">🍳 Zubereitung</span>
+            <span className="kitchen-column-title">
+              <ChefIcon />
+              <span>Zubereitung</span>
+            </span>
             <span className="kitchen-column-count">{ordersPrep.length}</span>
           </div>
-          {ordersPrep.map(order => (
-            <div key={order.id} className="kitchen-order-card">
-              <div className="kitchen-order-header">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span className="kitchen-order-id">{order.id}</span>
-                  <span className={`kitchen-order-type-badge ${order.type}`}>{order.type}</span>
-                </div>
-                <span className="kitchen-order-time">vor {getMinutesElapsed(order.createdAt)} Min.</span>
-              </div>
-              <div>
-                <div className="kitchen-order-customer">{order.customerName}</div>
-                {order.customerClass && <span className="kitchen-order-class">{order.customerClass}</span>}
-              </div>
-              <div className="kitchen-order-items">
-                {order.items.map((item, idx) => (
-                  <div key={idx} className="kitchen-order-item">
-                    <span>{item.productName}</span>
-                    <span className="kitchen-order-item-qty">x{item.quantity}</span>
+          {ordersPrep.map(order => {
+            const minutes = getMinutesElapsed(order.createdAt);
+            return (
+              <div 
+                key={order.id} 
+                className={`kitchen-order-card ${order.deliveryMethod === 'Lieferung' ? 'delivery-order' : ''}`}
+              >
+                <div className="card-top-row">
+                  <span className={`elapsed-time ${minutes >= 8 ? 'critical' : minutes >= 4 ? 'warning' : ''}`}>
+                    vor {minutes} Min.
+                  </span>
+                  <div className="card-badges">
+                    {order.deliveryMethod === 'Lieferung' && (
+                      <span className="delivery-badge-mini">🚗 LIEFERUNG</span>
+                    )}
+                    <span className={`type-badge-mini ${order.type}`}>{order.type}</span>
                   </div>
-                ))}
+                </div>
+
+                <div className="card-items-compact">
+                  {order.items.map((item, idx) => (
+                    <div key={idx} className="card-item-row">
+                      <span className="item-name-qty">
+                        <strong className="item-qty">{item.quantity}x</strong> {item.productName}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="card-footer-info">
+                  <div className="customer-row">
+                    <span className="customer-name">{order.customerName}</span>
+                    <span className="ticket-code">#{order.id.replace('C-', '')}</span>
+                  </div>
+                  {order.customerClass && (
+                    <div className={`destination-label ${order.deliveryMethod === 'Lieferung' ? 'delivery-dest' : ''}`}>
+                      {order.deliveryMethod === 'Lieferung' ? `📍 Raum: ${order.customerClass}` : `Klasse/Ort: ${order.customerClass}`}
+                    </div>
+                  )}
+                </div>
+
+                <div className="card-actions">
+                  <button 
+                    className="btn-trash-icon" 
+                    title="Bestellung löschen"
+                    onClick={() => handleDeleteOrder(order.id)}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                  </button>
+                  <button 
+                    className="btn-action-back" 
+                    title="Zurück zu Neu"
+                    onClick={() => handleUpdateStatus(order.id, 'Neu')}
+                  >
+                    ↩
+                  </button>
+                  <button 
+                    className="btn-action-primary" 
+                    onClick={() => handleUpdateStatus(order.id, getNextStatus(order.status))}
+                  >
+                    Fertig ➔
+                  </button>
+                </div>
               </div>
-              <div className="kitchen-order-footer">
-                <button 
-                  className="btn btn-secondary" 
-                  style={{ padding: '0.35rem 0.65rem', borderRadius: '6px' }}
-                  onClick={() => handleUpdateStatus(order.id, 'Neu')}
-                >
-                  ↩ Zurück
-                </button>
-                <button 
-                  className="btn btn-primary" 
-                  style={{ padding: '0.35rem 1rem', fontSize: '0.85rem', color: '#000', borderRadius: '6px' }}
-                  onClick={() => handleUpdateStatus(order.id, getNextStatus(order.status))}
-                >
-                  Fertig ➔
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
-        {/* Column 3: Fertig */}
-        <div className="kitchen-column ready-col">
+        {/* Column 3: Abholbereit */}
+        <div className={`kitchen-column ready-col ${ordersReady.length === 0 ? 'collapsed' : ''}`}>
           <div className="kitchen-column-header">
-            <span className="kitchen-column-title">🔔 Abholbereit</span>
+            <span className="kitchen-column-title">
+              <BellIcon />
+              <span>Abholbereit</span>
+            </span>
             <span className="kitchen-column-count">{ordersReady.length}</span>
           </div>
-          {ordersReady.map(order => (
-            <div key={order.id} className="kitchen-order-card" style={{ borderColor: 'rgba(16, 185, 129, 0.3)' }}>
-              <div className="kitchen-order-header">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span className="kitchen-order-id" style={{ color: '#10b981' }}>{order.id}</span>
-                  <span className={`kitchen-order-type-badge ${order.type}`}>{order.type}</span>
-                </div>
-                <span className="kitchen-order-time">bereit seit {getMinutesElapsed(order.updatedAt)} Min.</span>
-              </div>
-              <div>
-                <div className="kitchen-order-customer">{order.customerName}</div>
-                {order.customerClass && <span className="kitchen-order-class">{order.customerClass}</span>}
-              </div>
-              <div className="kitchen-order-items">
-                {order.items.map((item, idx) => (
-                  <div key={idx} className="kitchen-order-item">
-                    <span>{item.productName}</span>
-                    <span className="kitchen-order-item-qty">x{item.quantity}</span>
+          {ordersReady.map(order => {
+            const minutes = getMinutesElapsed(order.updatedAt);
+            return (
+              <div 
+                key={order.id} 
+                className={`kitchen-order-card ${order.deliveryMethod === 'Lieferung' ? 'delivery-order' : ''}`}
+              >
+                <div className="card-top-row">
+                  <span className="elapsed-time">
+                    bereit: {minutes} Min.
+                  </span>
+                  <div className="card-badges">
+                    {order.deliveryMethod === 'Lieferung' && (
+                      <span className="delivery-badge-mini">🚗 LIEFERUNG</span>
+                    )}
+                    <span className={`type-badge-mini ${order.type}`}>{order.type}</span>
                   </div>
-                ))}
+                </div>
+
+                <div className="card-items-compact">
+                  {order.items.map((item, idx) => (
+                    <div key={idx} className="card-item-row">
+                      <span className="item-name-qty">
+                        <strong className="item-qty">{item.quantity}x</strong> {item.productName}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="card-footer-info">
+                  <div className="customer-row">
+                    <span className="customer-name">{order.customerName}</span>
+                    <span className="ticket-code">#{order.id.replace('C-', '')}</span>
+                  </div>
+                  {order.customerClass && (
+                    <div className={`destination-label ${order.deliveryMethod === 'Lieferung' ? 'delivery-dest' : ''}`}>
+                      {order.deliveryMethod === 'Lieferung' ? `📍 Raum: ${order.customerClass}` : `Klasse/Ort: ${order.customerClass}`}
+                    </div>
+                  )}
+                </div>
+
+                <div className="card-actions">
+                  <button 
+                    className="btn-trash-icon" 
+                    title="Bestellung löschen"
+                    onClick={() => handleDeleteOrder(order.id)}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="3 6 5 6 21 6"/>
+                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                    </svg>
+                  </button>
+                  <button 
+                    className="btn-action-back" 
+                    title="Zurück zu Zubereitung"
+                    onClick={() => handleUpdateStatus(order.id, 'Zubereitung')}
+                  >
+                    ↩
+                  </button>
+                  <button 
+                    className="btn-action-primary" 
+                    style={{ backgroundColor: '#10b981' }}
+                    onClick={() => handleUpdateStatus(order.id, getNextStatus(order.status))}
+                  >
+                    {order.deliveryMethod === 'Lieferung' ? 'Geliefert ✓' : 'Ausgeben ✓'}
+                  </button>
+                </div>
               </div>
-              <div className="kitchen-order-footer">
-                <button 
-                  className="btn btn-secondary" 
-                  style={{ padding: '0.35rem 0.65rem', borderRadius: '6px' }}
-                  onClick={() => handleUpdateStatus(order.id, 'Zubereitung')}
-                >
-                  ↩ Zurück
-                </button>
-                <button 
-                  className="btn btn-primary" 
-                  style={{ padding: '0.35rem 1rem', fontSize: '0.85rem', color: '#000', borderRadius: '6px', backgroundColor: '#10b981' }}
-                  onClick={() => handleUpdateStatus(order.id, getNextStatus(order.status))}
-                >
-                  Ausgeben ✓
-                </button>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Column 4: Ausgeliefert */}
-        <div className="kitchen-column done-col">
+        <div className={`kitchen-column done-col ${ordersDone.length === 0 ? 'collapsed' : ''}`}>
           <div className="kitchen-column-header">
-            <span className="kitchen-column-title">✅ Ausgeliefert</span>
+            <span className="kitchen-column-title">
+              <CheckIcon />
+              <span>Ausgeliefert</span>
+            </span>
             <span className="kitchen-column-count">{ordersDone.length}</span>
           </div>
-          {ordersDone.slice(0, 15).map(order => ( // Show last 15 delivered orders to avoid clutter
-            <div key={order.id} className="kitchen-order-card" style={{ opacity: 0.6 }}>
-              <div className="kitchen-order-header">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span className="kitchen-order-id">{order.id}</span>
-                  <span className={`kitchen-order-type-badge ${order.type}`}>{order.type}</span>
+          {ordersDone.slice(0, 15).map(order => (
+            <div key={order.id} className="kitchen-order-card" style={{ opacity: 0.65 }}>
+              <div className="card-top-row">
+                <span className="elapsed-time" style={{ color: 'var(--text-muted)' }}>
+                  Erledigt
+                </span>
+                <div className="card-badges">
+                  {order.deliveryMethod === 'Lieferung' && (
+                    <span className="delivery-badge-mini" style={{ opacity: 0.6 }}>🚗 LIEFERUNG</span>
+                  )}
+                  <span className={`type-badge-mini ${order.type}`} style={{ opacity: 0.6 }}>{order.type}</span>
                 </div>
-                <span className="kitchen-order-time">fertig</span>
               </div>
-              <div>
-                <div className="kitchen-order-customer">{order.customerName}</div>
-                {order.customerClass && <span className="kitchen-order-class">{order.customerClass}</span>}
-              </div>
-              <div className="kitchen-order-items">
+
+              <div className="card-items-compact">
                 {order.items.map((item, idx) => (
-                  <div key={idx} className="kitchen-order-item">
-                    <span>{item.productName}</span>
-                    <span className="kitchen-order-item-qty">x{item.quantity}</span>
+                  <div key={idx} className="card-item-row" style={{ color: 'var(--text-secondary)' }}>
+                    <span className="item-name-qty">
+                      <strong className="item-qty" style={{ opacity: 0.6 }}>{item.quantity}x</strong> {item.productName}
+                    </span>
                   </div>
                 ))}
               </div>
-              <div className="kitchen-order-footer">
+
+              <div className="card-footer-info">
+                <div className="customer-row">
+                  <span className="customer-name" style={{ color: 'var(--text-muted)' }}>{order.customerName}</span>
+                  <span className="ticket-code">#{order.id.replace('C-', '')}</span>
+                </div>
+                {order.customerClass && (
+                  <div className="destination-label" style={{ fontSize: '0.75rem', opacity: 0.7 }}>
+                    {order.deliveryMethod === 'Lieferung' ? `📍 Raum: ${order.customerClass}` : `Klasse/Ort: ${order.customerClass}`}
+                  </div>
+                )}
+              </div>
+
+              <div className="card-actions">
                 <button 
-                  className="btn btn-secondary" 
-                  style={{ padding: '0.35rem 0.65rem', borderRadius: '6px', fontSize: '0.85rem' }}
+                  className="btn-action-back" 
+                  style={{ width: '100%' }}
                   onClick={() => handleUpdateStatus(order.id, 'Fertig')}
                 >
                   Reaktivieren ↩

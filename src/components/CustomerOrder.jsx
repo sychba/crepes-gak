@@ -52,6 +52,7 @@ export default function CustomerOrder({ navigate }) {
   const [deviceId, setDeviceId] = useState('');
   const [cooldown, setCooldown] = useState(0); // minutes remaining
   const [errorMessage, setErrorMessage] = useState(null);
+  const [deliveryMethod, setDeliveryMethod] = useState('Lieferung');
 
   // Customization modal states
   const [customizingProduct, setCustomizingProduct] = useState(null);
@@ -230,6 +231,7 @@ export default function CustomerOrder({ navigate }) {
         customerName: customerName.trim(),
         customerClass: customerClass.trim(),
         type: 'online',
+        deliveryMethod,
         items,
       });
       
@@ -500,14 +502,39 @@ export default function CustomerOrder({ navigate }) {
               </div>
 
               <div className="form-group">
-                <label htmlFor="cust-class">Klasse / Ort</label>
+                <label>Lieferart</label>
+                <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.25rem', marginBottom: '0.5rem' }}>
+                  <button
+                    type="button"
+                    className={`btn ${deliveryMethod === 'Abholung' ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ flex: 1, padding: '0.5rem', fontSize: '0.85rem' }}
+                    onClick={() => setDeliveryMethod('Abholung')}
+                  >
+                    🚶 Abholung
+                  </button>
+                  <button
+                    type="button"
+                    className={`btn ${deliveryMethod === 'Lieferung' ? 'btn-primary' : 'btn-secondary'}`}
+                    style={{ flex: 1, padding: '0.5rem', fontSize: '0.85rem' }}
+                    onClick={() => setDeliveryMethod('Lieferung')}
+                  >
+                    🚗 Lieferung (kostenlos)
+                  </button>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="cust-class">
+                  Klasse / Ort {deliveryMethod === 'Lieferung' ? '*' : '(optional)'}
+                </label>
                 <input
                   id="cust-class"
                   type="text"
                   className="form-input"
-                  placeholder="z.B. 10b oder Lehrerzimmer"
+                  placeholder={deliveryMethod === 'Lieferung' ? 'z.B. Zimmer 104 oder Klasse 10b (erforderlich)' : 'z.B. 10b oder Lehrerzimmer'}
                   value={customerClass}
                   onChange={(e) => setCustomerClass(e.target.value)}
+                  required={deliveryMethod === 'Lieferung'}
                 />
               </div>
 
