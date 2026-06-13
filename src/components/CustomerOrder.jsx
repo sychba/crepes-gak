@@ -26,11 +26,11 @@ const getFriendlyErrorMessage = (rawError) => {
   if (msg.includes('gesperrt')) {
     return 'Dieses Gerät wurde für weitere Bestellungen gesperrt. Bitte wende dich an das Personal.';
   }
-  if (msg.includes('Bestell-Limit erreicht') || msg.includes('2 Bestellungen pro Stunde')) {
-    return 'Bestell-Limit erreicht. Du kannst maximal 2 Bestellungen pro Stunde aufgeben.';
+  if (msg.includes('Bestell-Limit erreicht') || msg.includes('bereits online bestellt')) {
+    return 'Du hast bereits online bestellt. Für weitere Bestellungen bestelle bitte direkt vor Ort an der Kasse (Limit: 1 Online-Bestellung pro Stunde).';
   }
-  if (msg.includes('Maximal 10 Produkte') || msg.includes('10 Produkte pro Bestellung erlaubt')) {
-    return 'Maximal 10 Produkte pro Bestellung erlaubt (Wasser ist unbegrenzt).';
+  if (msg.includes('Maximal 10 Produkte') || msg.includes('10 Produkte pro Bestellung erlaubt') || msg.includes('über 10 Produkte')) {
+    return 'Maximal 10 Produkte pro Online-Bestellung erlaubt. Für größere Bestellungen bestelle bitte direkt vor Ort an der Kasse.';
   }
   if (msg.includes('Validator') || msg.includes('ArgumentValidationError') || msg.includes('extra field')) {
     return 'Server-Konfigurationsfehler: Bitte stelle sicher, dass das neueste Convex-Schema deployed ist (npx convex deploy).';
@@ -50,7 +50,6 @@ export default function CustomerOrder({ navigate }) {
   const [customerClass, setCustomerClass] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [deviceId, setDeviceId] = useState('');
-  const [cooldown, setCooldown] = useState(0); // minutes remaining
   const [errorMessage, setErrorMessage] = useState(null);
   const [deliveryMethod, setDeliveryMethod] = useState('Lieferung');
 
@@ -58,7 +57,13 @@ export default function CustomerOrder({ navigate }) {
   const [customizingProduct, setCustomizingProduct] = useState(null);
   const [selectedToppings, setSelectedToppings] = useState([]);
 
-  // 1. Get or generate device ID & check cooldown
+  // Fetch online order limit status from Convex
+  const orderStatus = useQuery(api.orders.checkActiveOrRecentOrder, { deviceId: deviceId || "" });
+  const activeOrderTicket = orderStatus?.status === 'active' ? orderStatus.ticketCode : null;
+  const activeOrderStatus = orderStatus?.status === 'active' ? orderStatus.orderStatus : null;
+  const cooldown = orderStatus?.status === 'cooldown' ? orderStatus.remainingMinutes : 0;
+
+  // Get or generate device ID
   useEffect(() => {
     let devId = localStorage.getItem('crepes_device_id');
     if (!devId) {
@@ -66,31 +71,6 @@ export default function CustomerOrder({ navigate }) {
       localStorage.setItem('crepes_device_id', devId);
     }
     setDeviceId(devId);
-
-    const checkCooldown = () => {
-      const storedTimestamps = JSON.parse(localStorage.getItem('crepes_order_timestamps') || '[]');
-      const oneHourAgo = Date.now() - 60 * 60 * 1000;
-      const recentTimestamps = storedTimestamps.filter(t => t > oneHourAgo);
-      
-      localStorage.setItem('crepes_order_timestamps', JSON.stringify(recentTimestamps));
-
-      if (recentTimestamps.length >= 2) {
-        const oldestOrder = recentTimestamps[0];
-        const nextAllowed = oldestOrder + 60 * 60 * 1000;
-        const remainingMs = nextAllowed - Date.now();
-        if (remainingMs > 0) {
-          setCooldown(Math.ceil(remainingMs / 60000));
-        } else {
-          setCooldown(0);
-        }
-      } else {
-        setCooldown(0);
-      }
-    };
-
-    checkCooldown();
-    const interval = setInterval(checkCooldown, 20000);
-    return () => clearInterval(interval);
   }, []);
 
   // Auto-seed/migrate products if empty or old schema
@@ -105,8 +85,12 @@ export default function CustomerOrder({ navigate }) {
   }, [products, seedProducts]);
 
   const handleAddClick = (product) => {
+    if (activeOrderTicket) {
+      setErrorMessage(`Du hast bereits eine offene Bestellung (${activeOrderTicket}). Bitte hole diese erst ab oder bestelle weitere Portionen direkt vor Ort an der Kasse.`);
+      return;
+    }
     if (cooldown > 0) {
-      setErrorMessage(`Bestell-Limit erreicht. Du kannst in ${cooldown} Minuten wieder bestellen.`);
+      setErrorMessage(`Du hast bereits online bestellt. Für weitere Portionen komm bitte direkt vor Ort an die Kasse (neue Online-Bestellungen sind in ${cooldown} Minuten wieder möglich).`);
       return;
     }
 
@@ -237,11 +221,6 @@ export default function CustomerOrder({ navigate }) {
       
       clearTimeout(watchdog);
 
-      // Update local storage order timestamps on success
-      const storedTimestamps = JSON.parse(localStorage.getItem('crepes_order_timestamps') || '[]');
-      storedTimestamps.push(Date.now());
-      localStorage.setItem('crepes_order_timestamps', JSON.stringify(storedTimestamps));
-
       setCart([]);
       setCustomerName('');
       setCustomerClass('');
@@ -283,11 +262,27 @@ export default function CustomerOrder({ navigate }) {
 
   return (
     <div className="main-content">
+      {/* Active Order Alert Banner */}
+      {activeOrderTicket && (
+        <div className="alert alert-error" style={{ position: 'sticky', top: '5.5rem', zIndex: 80, display: 'flex', flexDirection: 'column', gap: '0.5rem', textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', marginBottom: '2rem' }}>
+          <strong>Laufende Bestellung aktiv ({activeOrderTicket})</strong>
+          <span>Du hast bereits eine offene Online-Bestellung (Status: <strong>{activeOrderStatus}</strong>). Weitere Bestellungen bitte <strong>vor Ort an der Kasse</strong> aufgeben.</span>
+          <button 
+            type="button" 
+            className="btn btn-secondary" 
+            style={{ alignSelf: 'center', padding: '0.35rem 1rem', fontSize: '0.8rem', marginTop: '0.25rem' }}
+            onClick={() => navigate(`/order/${activeOrderTicket}`)}
+          >
+            Zur Live-Verfolgung ➔
+          </button>
+        </div>
+      )}
+
       {/* Cooldown Alert Banner */}
-      {cooldown > 0 && (
+      {!activeOrderTicket && cooldown > 0 && (
         <div className="alert alert-error" style={{ position: 'sticky', top: '5.5rem', zIndex: 80, display: 'flex', flexDirection: 'column', gap: '0.25rem', textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', marginBottom: '2rem' }}>
-          <strong>Bestellsperre aktiv (Anti-Spam)</strong>
-          <span>Du hast bereits 2 Bestellungen aufgegeben. Du kannst in <strong>{cooldown} Minuten</strong> wieder bestellen.</span>
+          <strong>Online-Bestell-Limit erreicht</strong>
+          <span>Du hast bereits online bestellt. Für weitere Bestellungen komm bitte <strong>direkt vor Ort an die Kasse</strong>. (Neue Online-Bestellung in {cooldown} Min. möglich).</span>
         </div>
       )}
 
@@ -481,10 +476,9 @@ export default function CustomerOrder({ navigate }) {
             <form onSubmit={handleCheckout} className="cart-checkout-form">
               {/* Product Limit Warning */}
               {nonWaterCount > 10 && (
-                <div className="alert alert-error" style={{ fontSize: '0.8rem', padding: '0.75rem', marginBottom: '0.5rem', lineHeight: '1.4' }}>
-                  ⚠️ Maximal 10 Produkte pro Bestellung erlaubt (Wasser ist unbegrenzt). 
-                  Aktuell: <strong>{nonWaterCount} Produkte</strong>. 
-                  Bitte erstelle eine neue Bestellung oder bestelle von einem anderen Gerät.
+                <div className="alert alert-error" style={{ fontSize: '0.85rem', padding: '0.75rem', marginBottom: '0.5rem', lineHeight: '1.4' }}>
+                  ⚠️ Für Bestellungen über 10 Produkte bestelle bitte direkt vor Ort an der Kasse.
+                  (Aktuell im Warenkorb: <strong>{nonWaterCount} Produkte</strong>. Wasser ist unbegrenzt).
                 </div>
               )}
 
@@ -546,7 +540,7 @@ export default function CustomerOrder({ navigate }) {
               <button
                 type="submit"
                 className="btn btn-primary"
-                disabled={submitting || nonWaterCount > 10 || cooldown > 0}
+                disabled={submitting || nonWaterCount > 10 || cooldown > 0 || !!activeOrderTicket}
                 style={{ width: '100%', padding: '1rem', marginTop: '0.5rem' }}
               >
                 {submitting ? 'Bestellung wird gesendet...' : 'Kostenpflichtig bestellen'}

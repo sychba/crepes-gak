@@ -76,26 +76,34 @@ export const create = mutation({
       throw new Error("Dieses Gerät wurde für weitere Bestellungen gesperrt. Bitte wende dich an das Personal.");
     }
 
-    // 2. For online orders, enforce anti-spam limit (max 2 orders per hour)
+    // 2. For online orders, enforce active order check and anti-spam limit (max 1 order per hour)
     if (args.type === 'online') {
-      const oneHourAgo = Date.now() - 60 * 60 * 1000;
-      const recentOrders = await ctx.db
+      const deviceOrders = await ctx.db
         .query("orders")
         .withIndex("by_device", (q) => q.eq("deviceId", args.deviceId))
-        .filter((q) => q.gt(q.field("createdAt"), oneHourAgo))
         .collect();
 
-      if (recentOrders.length >= 2) {
-        throw new Error("Bestell-Limit erreicht. Du kannst maximal 2 Bestellungen pro Stunde aufgeben.");
+      const activeOrder = deviceOrders.find(
+        (o) => o.status === 'Neu' || o.status === 'Zubereitung' || o.status === 'Fertig'
+      );
+      if (activeOrder) {
+        throw new Error("Du hast bereits eine aktive Bestellung. Für weitere Bestellungen bestelle bitte direkt vor Ort an der Kasse.");
       }
-    }
 
-    // 3. Enforce maximum 10 non-water items per order
-    const nonWaterQty = args.items.reduce((sum, item) => {
-      return item.productId !== 'drink-wasser' ? sum + item.quantity : sum;
-    }, 0);
-    if (nonWaterQty > 10) {
-      throw new Error("Maximal 10 Produkte pro Bestellung erlaubt (Wasser ist unbegrenzt).");
+      const oneHourAgo = Date.now() - 60 * 60 * 1000;
+      const recentOrders = deviceOrders.filter((o) => o.createdAt > oneHourAgo);
+
+      if (recentOrders.length >= 1) {
+        throw new Error("Du hast bereits online bestellt. Für weitere Bestellungen bestelle bitte direkt vor Ort an der Kasse (Limit: 1 Online-Bestellung pro Stunde).");
+      }
+
+      // 3. Enforce maximum 10 non-water items per order for online orders
+      const nonWaterQty = args.items.reduce((sum, item) => {
+        return item.productId !== 'drink-wasser' ? sum + item.quantity : sum;
+      }, 0);
+      if (nonWaterQty > 10) {
+        throw new Error("Maximal 10 Produkte pro Online-Bestellung erlaubt. Für größere Bestellungen bestelle bitte direkt vor Ort an der Kasse.");
+      }
     }
 
     // Fetch all products to resolve details
@@ -314,4 +322,52 @@ export const toggleDeviceBlock = mutation({
     
     return { success: true };
   },
+});
+
+// Check if a device has an active order or recent order (last 60 mins)
+export const checkActiveOrRecentOrder = query({
+  args: { deviceId: v.string() },
+  handler: async (ctx, args) => {
+    if (!args.deviceId) {
+      return { status: "ok" };
+    }
+
+    // 1. Check if blocked
+    const isBlocked = await ctx.db
+      .query("blockedDevices")
+      .withIndex("by_device", (q) => q.eq("deviceId", args.deviceId))
+      .unique();
+    if (isBlocked) {
+      return { status: "blocked" };
+    }
+
+    const deviceOrders = await ctx.db
+      .query("orders")
+      .withIndex("by_device", (q) => q.eq("deviceId", args.deviceId))
+      .collect();
+
+    // Check active
+    const activeOrder = deviceOrders.find(
+      (o) => o.status === 'Neu' || o.status === 'Zubereitung' || o.status === 'Fertig'
+    );
+    if (activeOrder) {
+      return { status: "active", ticketCode: activeOrder.id, orderStatus: activeOrder.status };
+    }
+
+    // Check cooldown (60 minutes)
+    const oneHourAgo = Date.now() - 60 * 60 * 1000;
+    const recentOrders = deviceOrders.filter((o) => o.createdAt > oneHourAgo);
+    if (recentOrders.length > 0) {
+      const sorted = recentOrders.sort((a, b) => b.createdAt - a.createdAt);
+      const lastOrderTime = sorted[0].createdAt;
+      const nextAllowed = lastOrderTime + 60 * 60 * 1000;
+      const remainingMs = nextAllowed - Date.now();
+      return {
+        status: "cooldown",
+        remainingMinutes: Math.max(1, Math.ceil(remainingMs / 60000))
+      };
+    }
+
+    return { status: "ok" };
+  }
 });

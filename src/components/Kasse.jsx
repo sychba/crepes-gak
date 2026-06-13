@@ -264,10 +264,6 @@ export default function Kasse({ token }) {
     return a.id.localeCompare(b.id);
   });
 
-  const nonWaterCount = cart.reduce((sum, item) => {
-    return item.productId !== 'drink-wasser' ? sum + item.quantity : sum;
-  }, 0);
-
   return (
     <div>
       <h2 style={{ marginBottom: '1.5rem', fontFamily: 'var(--font-display)' }}>Kasse (Vor-Ort-Bestellung)</h2>
@@ -305,10 +301,6 @@ export default function Kasse({ token }) {
                 <div className="pos-product-header">
                   <span className="pos-product-name">{product.name}</span>
                   <span className="pos-product-price">{product.price.toFixed(2)} €</span>
-                </div>
-
-                <div className="pos-product-desc">
-                  {product.description}
                 </div>
 
                 {/* Customize button (Pencil Icon) for Crepes/Waffeln */}
@@ -415,13 +407,6 @@ export default function Kasse({ token }) {
           </div>
 
           <form onSubmit={handleCheckout} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {/* Product Limit Warning */}
-            {nonWaterCount > 10 && (
-              <div className="alert alert-error" style={{ fontSize: '0.75rem', padding: '0.5rem', marginBottom: '0', lineHeight: '1.3' }}>
-                ⚠️ Max 10 Produkte erlaubt.
-              </div>
-            )}
-
             <div className="form-group">
               <label>Kundenname *</label>
               <input
@@ -468,7 +453,7 @@ export default function Kasse({ token }) {
               <button 
                 type="submit" 
                 className="btn btn-primary" 
-                disabled={submitting || cart.length === 0 || nonWaterCount > 10}
+                disabled={submitting || cart.length === 0}
                 style={{ flex: 1, padding: '0.75rem', fontSize: '0.95rem', fontWeight: 800 }}
               >
                 {submitting ? 'Buchen...' : 'Buchen'}
