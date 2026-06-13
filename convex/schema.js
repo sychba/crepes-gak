@@ -13,7 +13,7 @@ export default defineSchema({
 
   orders: defineTable({
     id: v.string(), // E.g. "C-X39B" (ticket code)
-    deviceId: v.string(), // Device tracking identifier
+    deviceId: v.optional(v.string()), // Device tracking identifier
     customerName: v.string(),
     customerClass: v.string(),
     status: v.string(), // "Neu" | "Zubereitung" | "Fertig" | "Ausgeliefert"
