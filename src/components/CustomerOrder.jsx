@@ -2,18 +2,30 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 
+const AVAILABLE_TOPPINGS = [
+  'Puderzucker',
+  'Zimt-Zucker',
+  'Nutella',
+  'Käse',
+  'Schinken'
+];
+
 export default function CustomerOrder({ navigate }) {
   const products = useQuery(api.products.list);
   const seedProducts = useMutation(api.products.seed);
   const createOrder = useMutation(api.orders.create);
 
-  const [cart, setCart] = useState({}); // { productId: quantity }
+  const [cart, setCart] = useState([]); // Array: [{ cartId, productId, quantity, toppings }]
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [customerClass, setCustomerClass] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [deviceId, setDeviceId] = useState('');
   const [cooldown, setCooldown] = useState(0); // minutes remaining
+
+  // Customization modal states
+  const [customizingProduct, setCustomizingProduct] = useState(null);
+  const [selectedToppings, setSelectedToppings] = useState([]);
 
   // 1. Get or generate device ID & check cooldown
   useEffect(() => {
@@ -46,46 +58,112 @@ export default function CustomerOrder({ navigate }) {
     };
 
     checkCooldown();
-    const interval = setInterval(checkCooldown, 20000); // refresh every 20 seconds
+    const interval = setInterval(checkCooldown, 20000);
     return () => clearInterval(interval);
   }, []);
 
-  // Auto-seed products if they are empty
+  // Auto-seed/migrate products if empty or old schema
   useEffect(() => {
-    if (products && products.length === 0) {
-      console.log("No products found in Convex. Seeding defaults...");
-      seedProducts().catch(err => console.error("Error seeding products:", err));
+    if (products) {
+      const hasOldProducts = products.some(p => p.id === 'crepe-nutella');
+      if (products.length === 0 || hasOldProducts) {
+        console.log("Old or missing products detected in Convex. Seeding new catalog...");
+        seedProducts().catch(err => console.error("Error seeding products:", err));
+      }
     }
   }, [products, seedProducts]);
 
-  const updateQuantity = (productId, delta) => {
-    if (cooldown > 0 && delta > 0) {
+  const handleAddClick = (product) => {
+    if (cooldown > 0) {
       alert(`Bestell-Limit erreicht. Du kannst in ${cooldown} Minuten wieder bestellen.`);
       return;
     }
+
+    // Waffles and Crepes require customization
+    if (product.id === 'base-crepe' || product.id === 'base-waffel') {
+      setCustomizingProduct(product);
+      setSelectedToppings([]);
+    } else {
+      // Direct add for sandwiches / drinks
+      addToCart(product.id, []);
+    }
+  };
+
+  const addToCart = (productId, toppings) => {
     setCart((prevCart) => {
-      const currentQty = prevCart[productId] || 0;
-      const newQty = Math.max(0, currentQty + delta);
+      // Sort toppings to ensure same combination gets same cartId
+      const sortedToppings = [...toppings].sort();
+      const cartId = productId + (sortedToppings.length > 0 ? '_' + sortedToppings.join('-') : '');
       
-      const updatedCart = { ...prevCart };
-      if (newQty === 0) {
-        delete updatedCart[productId];
+      const existingItemIdx = prevCart.findIndex(item => item.cartId === cartId);
+      const newCart = [...prevCart];
+
+      if (existingItemIdx > -1) {
+        newCart[existingItemIdx] = {
+          ...newCart[existingItemIdx],
+          quantity: newCart[existingItemIdx].quantity + 1
+        };
       } else {
-        updatedCart[productId] = newQty;
+        newCart.push({
+          cartId,
+          productId,
+          quantity: 1,
+          toppings: sortedToppings
+        });
       }
-      return updatedCart;
+      return newCart;
     });
   };
 
+  const updateQuantity = (cartId, delta) => {
+    setCart((prevCart) => {
+      const idx = prevCart.findIndex(item => item.cartId === cartId);
+      if (idx === -1) return prevCart;
+
+      const newQty = prevCart[idx].quantity + delta;
+      const newCart = [...prevCart];
+
+      if (newQty <= 0) {
+        newCart.splice(idx, 1);
+      } else {
+        newCart[idx] = {
+          ...newCart[idx],
+          quantity: newQty
+        };
+      }
+      return newCart;
+    });
+  };
+
+  const handleToppingToggle = (topping) => {
+    setSelectedToppings(prev => {
+      if (prev.includes(topping)) {
+        return prev.filter(t => t !== topping);
+      } else {
+        return [...prev, topping];
+      }
+    });
+  };
+
+  const submitCustomization = () => {
+    if (!customizingProduct) return;
+    addToCart(customizingProduct.id, selectedToppings);
+    setCustomizingProduct(null);
+    setSelectedToppings([]);
+  };
+
   const getCartCount = () => {
-    return Object.values(cart).reduce((sum, qty) => sum + qty, 0);
+    return cart.reduce((sum, item) => sum + item.quantity, 0);
   };
 
   const getCartTotal = () => {
     if (!products) return 0;
-    return Object.entries(cart).reduce((sum, [productId, qty]) => {
-      const prod = products.find((p) => p.id === productId);
-      return sum + (prod ? prod.price * qty : 0);
+    return cart.reduce((sum, item) => {
+      const prod = products.find((p) => p.id === item.productId);
+      if (!prod) return sum;
+      const itemBasePrice = prod.price;
+      const toppingsPrice = item.toppings.length * 0.50;
+      return sum + (itemBasePrice + toppingsPrice) * item.quantity;
     }, 0);
   };
 
@@ -96,12 +174,7 @@ export default function CustomerOrder({ navigate }) {
       return;
     }
 
-    const items = Object.entries(cart).map(([productId, quantity]) => ({
-      productId,
-      quantity,
-    }));
-
-    if (items.length === 0) {
+    if (cart.length === 0) {
       alert('Dein Warenkorb ist leer.');
       return;
     }
@@ -109,6 +182,12 @@ export default function CustomerOrder({ navigate }) {
     setSubmitting(true);
 
     try {
+      const items = cart.map(item => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        toppings: item.toppings
+      }));
+
       const order = await createOrder({
         deviceId,
         customerName: customerName.trim(),
@@ -122,7 +201,7 @@ export default function CustomerOrder({ navigate }) {
       storedTimestamps.push(Date.now());
       localStorage.setItem('crepes_order_timestamps', JSON.stringify(storedTimestamps));
 
-      setCart({});
+      setCart([]);
       setCustomerName('');
       setCustomerClass('');
       setIsCartOpen(false);
@@ -144,8 +223,10 @@ export default function CustomerOrder({ navigate }) {
     );
   }
 
-  // Group products by category
-  const categories = products.reduce((acc, prod) => {
+  // Filter categories. Exclude products with old IDs if any remain during transition
+  const validProducts = products.filter(p => p.id !== 'crepe-nutella');
+
+  const categories = validProducts.reduce((acc, prod) => {
     if (!acc[prod.category]) {
       acc[prod.category] = [];
     }
@@ -154,8 +235,8 @@ export default function CustomerOrder({ navigate }) {
   }, {});
 
   const cartCount = getCartCount();
-  const nonWaterCount = Object.entries(cart).reduce((sum, [id, qty]) => {
-    return id !== 'drink-wasser' ? sum + qty : sum;
+  const nonWaterCount = cart.reduce((sum, item) => {
+    return item.productId !== 'drink-wasser' ? sum + item.quantity : sum;
   }, 0);
 
   return (
@@ -171,10 +252,10 @@ export default function CustomerOrder({ navigate }) {
       {/* Welcome Banner */}
       <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
         <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem', background: 'linear-gradient(135deg, #fff 40%, var(--accent) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
-          Frische Crepes online bestellen
+          Frische Crepes & Waffeln bestellen
         </h1>
         <p style={{ color: 'var(--text-secondary)', maxWidth: '600px', margin: '0 auto' }}>
-          Wähle deine Lieblingscrepes und Getränke aus. Bezahle einfach bar bei der Abholung. Guten Appetit!
+          Wähle dein Lieblingsprodukt und verfeinere es mit leckeren Toppings. Bezahle bar bei der Abholung.
         </p>
       </div>
 
@@ -184,8 +265,13 @@ export default function CustomerOrder({ navigate }) {
           <h2 className="category-title">{categoryName}</h2>
           <div className="products-grid">
             {catProducts.map((product) => {
-              const qty = cart[product.id] || 0;
               const imageUrl = `/images/${product.id}.png`;
+              
+              // Find total count of this base product in the cart
+              const countInCart = cart
+                .filter(item => item.productId === product.id)
+                .reduce((sum, item) => sum + item.quantity, 0);
+
               return (
                 <div key={product.id} className="product-card">
                   <div className="product-image-container">
@@ -204,16 +290,17 @@ export default function CustomerOrder({ navigate }) {
                       <p className="product-desc">{product.description}</p>
                     </div>
                     <div className="product-footer">
-                      <div className="product-price">{product.price.toFixed(2)} €</div>
-                      {qty > 0 ? (
-                        <div className="quantity-control">
-                          <button className="quantity-btn" onClick={() => updateQuantity(product.id, -1)}>−</button>
-                          <span className="quantity-display">{qty}</span>
-                          <button className="quantity-btn" onClick={() => updateQuantity(product.id, 1)}>+</button>
-                        </div>
-                      ) : (
-                        <button className="add-btn" onClick={() => updateQuantity(product.id, 1)}>Hinzufügen</button>
-                      )}
+                      <div className="product-price">
+                        {product.price.toFixed(2)} €
+                        {(product.id === 'base-crepe' || product.id === 'base-waffel') && (
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block', fontWeight: 'normal' }}>
+                            + 0.50 € je Extra
+                          </span>
+                        )}
+                      </div>
+                      <button className="add-btn" onClick={() => handleAddClick(product)}>
+                        {countInCart > 0 ? `Hinzufügen (${countInCart})` : 'Hinzufügen'}
+                      </button>
                     </div>
                   </div>
                 </div>
@@ -232,6 +319,73 @@ export default function CustomerOrder({ navigate }) {
         </button>
       )}
 
+      {/* Toppings Customization Modal */}
+      {customizingProduct && (
+        <div className="cart-drawer-overlay" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <div className="login-container" style={{ width: '100%', maxWidth: '460px', margin: '0 1rem', textAlign: 'left', animation: 'bounce-in 0.3s ease-out' }}>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', marginBottom: '0.5rem', color: 'var(--accent)' }}>
+              ✨ {customizingProduct.name} verfeinern
+            </h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
+              Wähle deine Extras aus. Jedes Topping kostet <strong>+ 0.50 €</strong>.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', marginBottom: '2rem' }}>
+              {AVAILABLE_TOPPINGS.map(topping => {
+                const isSelected = selectedToppings.includes(topping);
+                return (
+                  <label 
+                    key={topping} 
+                    style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: '0.75rem', 
+                      padding: '0.75rem 1rem', 
+                      borderRadius: '10px', 
+                      backgroundColor: isSelected ? 'rgba(245, 158, 11, 0.06)' : 'var(--bg-tertiary)',
+                      border: `1px solid ${isSelected ? 'var(--accent)' : 'rgba(255,255,255,0.04)'}`,
+                      cursor: 'pointer',
+                      transition: 'var(--transition-fast)'
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={() => handleToppingToggle(topping)}
+                      style={{ 
+                        width: '18px', 
+                        height: '18px', 
+                        accentColor: 'var(--accent)',
+                        cursor: 'pointer'
+                      }}
+                    />
+                    <span style={{ fontWeight: 600, fontSize: '0.95rem', color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+                      {topping} (+ 0.50 €)
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '1rem', marginBottom: '1.5rem' }}>
+              <span style={{ color: 'var(--text-secondary)' }}>Preis pro Stück:</span>
+              <strong style={{ fontSize: '1.35rem', color: 'var(--accent)', fontFamily: 'var(--font-display)' }}>
+                {(customizingProduct.price + selectedToppings.length * 0.50).toFixed(2)} €
+              </strong>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+              <button className="btn btn-secondary" onClick={() => setCustomizingProduct(null)}>
+                Abbrechen
+              </button>
+              <button className="btn btn-primary" onClick={submitCustomization}>
+                Hinzufügen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Cart Drawer */}
       {isCartOpen && (
         <div className="cart-drawer-overlay" onClick={() => setIsCartOpen(false)}>
@@ -242,22 +396,36 @@ export default function CustomerOrder({ navigate }) {
             </div>
 
             <div className="cart-items">
-              {Object.entries(cart).map(([productId, quantity]) => {
-                const product = products.find((p) => p.id === productId);
+              {cart.map((item) => {
+                const product = products.find((p) => p.id === item.productId);
                 if (!product) return null;
+                const toppingsPrice = item.toppings.length * 0.50;
+                const unitPrice = product.price + toppingsPrice;
+                
                 return (
-                  <div key={productId} className="cart-item">
-                    <div className="cart-item-details">
-                      <h4>{product.name}</h4>
-                      <div className="cart-item-price">{(product.price * quantity).toFixed(2)} €</div>
-                    </div>
-                    <div className="cart-item-right">
-                      <div className="quantity-control">
-                        <button className="quantity-btn" onClick={() => updateQuantity(productId, -1)}>−</button>
-                        <span className="quantity-display">{quantity}</span>
-                        <button className="quantity-btn" onClick={() => updateQuantity(productId, 1)}>+</button>
+                  <div key={item.cartId} className="cart-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '0.5rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div className="cart-item-details">
+                        <h4 style={{ fontSize: '1.05rem' }}>{product.name}</h4>
+                        <div className="cart-item-price">{(unitPrice * item.quantity).toFixed(2)} €</div>
+                      </div>
+                      <div className="cart-item-right">
+                        <div className="quantity-control">
+                          <button className="quantity-btn" onClick={() => updateQuantity(item.cartId, -1)}>−</button>
+                          <span className="quantity-display">{item.quantity}</span>
+                          <button className="quantity-btn" onClick={() => updateQuantity(item.cartId, 1)}>+</button>
+                        </div>
                       </div>
                     </div>
+                    {item.toppings.length > 0 && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem', marginTop: '0.25rem' }}>
+                        {item.toppings.map(t => (
+                          <span key={t} style={{ fontSize: '0.7rem', padding: '0.15rem 0.4rem', borderRadius: '4px', backgroundColor: 'var(--bg-secondary)', border: '1px solid rgba(255,255,255,0.04)', color: 'var(--accent)' }}>
+                            + {t}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 );
               })}

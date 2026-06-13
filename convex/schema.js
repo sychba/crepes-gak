@@ -26,6 +26,7 @@ export default defineSchema({
         productName: v.string(),
         quantity: v.number(),
         priceAtOrder: v.number(),
+        toppings: v.optional(v.array(v.string())), // Array of selected toppings
       })
     ),
   })

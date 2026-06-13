@@ -61,6 +61,7 @@ export const create = mutation({
       v.object({
         productId: v.string(),
         quantity: v.number(),
+        toppings: v.optional(v.array(v.string())), // Selected toppings
       })
     ),
   },
@@ -102,11 +103,22 @@ export const create = mutation({
     // Map items to nested document with price and name at order time
     const orderItems = args.items.map((item) => {
       const product = products.find((p) => p.id === item.productId);
+      const basePrice = product ? product.price : 0.00;
+      
+      // Calculate toppings price: each selected topping adds +0.50 €
+      const toppingsPrice = item.toppings ? item.toppings.length * 0.50 : 0.00;
+
+      // Format product name to display selected toppings
+      const toppingsLabel = item.toppings && item.toppings.length > 0
+        ? ` (${item.toppings.join(", ")})`
+        : "";
+
       return {
         productId: item.productId,
-        productName: product ? product.name : "Unbekanntes Produkt",
+        productName: (product ? product.name : "Unbekanntes Produkt") + toppingsLabel,
         quantity: item.quantity,
-        priceAtOrder: product ? product.price : 0.00,
+        priceAtOrder: basePrice + toppingsPrice,
+        toppings: item.toppings || []
       };
     });
 
