@@ -10,6 +10,14 @@ const AVAILABLE_TOPPINGS = [
   'Schinken'
 ];
 
+const getDefaultToppingsForProduct = (productId) => {
+  if (productId.includes('nutella')) return ['Nutella'];
+  if (productId.includes('zimt-zucker')) return ['Zimt-Zucker'];
+  if (productId.includes('puderzucker')) return ['Puderzucker'];
+  if (productId.includes('kaese-schinken')) return ['Käse', 'Schinken'];
+  return [];
+};
+
 const getFriendlyErrorMessage = (rawError) => {
   if (!rawError) return 'Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.';
   
@@ -47,10 +55,10 @@ export default function Kasse({ token }) {
   const [selectedToppings, setSelectedToppings] = useState([]);
 
   const handleAddClick = (product) => {
-    // Waffles and Crepes require toppings customization
-    if (product.id === 'base-crepe' || product.id === 'base-waffel') {
+    // If product category is Crepes or Waffeln, it's customizable
+    if (product.category === 'Crepes' || product.category === 'Waffeln') {
       setCustomizingProduct(product);
-      setSelectedToppings([]);
+      setSelectedToppings(getDefaultToppingsForProduct(product.id));
     } else {
       // Direct add for sandwiches / drinks
       addToCart(product.id, []);
@@ -115,7 +123,8 @@ export default function Kasse({ token }) {
 
   const submitCustomization = () => {
     if (!customizingProduct) return;
-    addToCart(customizingProduct.id, selectedToppings);
+    const baseId = customizingProduct.category === 'Crepes' ? 'base-crepe' : 'base-waffel';
+    addToCart(baseId, selectedToppings);
     setCustomizingProduct(null);
     setSelectedToppings([]);
   };
@@ -195,8 +204,8 @@ export default function Kasse({ token }) {
     );
   }
 
-  // Filter categories. Exclude products with old IDs if any remain during transition
-  const validProducts = products.filter(p => p.id !== 'crepe-nutella');
+  // Filter categories. Exclude system base products from the storefront
+  const validProducts = products.filter(p => p.category !== 'System');
 
   // Group products by category
   const categories = validProducts.reduce((acc, prod) => {
@@ -346,7 +355,9 @@ export default function Kasse({ token }) {
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
-                        <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>{product.name}</div>
+                        <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>
+                          {product.id === 'base-crepe' ? 'Crepe' : product.id === 'base-waffel' ? 'Waffel' : product.name}
+                        </div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
                           {item.quantity}x {unitPrice.toFixed(2)} €
                         </div>
@@ -467,7 +478,10 @@ export default function Kasse({ token }) {
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', marginBottom: '2rem' }}>
-              {AVAILABLE_TOPPINGS.map(topping => {
+              {(customizingProduct.category === 'Waffeln' 
+                ? ['Puderzucker', 'Zimt-Zucker', 'Nutella'] 
+                : AVAILABLE_TOPPINGS
+              ).map(topping => {
                 const isSelected = selectedToppings.includes(topping);
                 return (
                   <label 
@@ -506,7 +520,7 @@ export default function Kasse({ token }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '1rem', marginBottom: '1.5rem' }}>
               <span style={{ color: 'var(--text-secondary)' }}>Preis pro Stück:</span>
               <strong style={{ fontSize: '1.35rem', color: 'var(--accent)', fontFamily: 'var(--font-display)' }}>
-                {(customizingProduct.price + selectedToppings.length * 0.50).toFixed(2)} €
+                {(2.00 + selectedToppings.length * 0.50).toFixed(2)} €
               </strong>
             </div>
 

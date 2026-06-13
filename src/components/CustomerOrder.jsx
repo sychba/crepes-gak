@@ -10,6 +10,14 @@ const AVAILABLE_TOPPINGS = [
   'Schinken'
 ];
 
+const getDefaultToppingsForProduct = (productId) => {
+  if (productId.includes('nutella')) return ['Nutella'];
+  if (productId.includes('zimt-zucker')) return ['Zimt-Zucker'];
+  if (productId.includes('puderzucker')) return ['Puderzucker'];
+  if (productId.includes('kaese-schinken')) return ['Käse', 'Schinken'];
+  return [];
+};
+
 const getFriendlyErrorMessage = (rawError) => {
   if (!rawError) return 'Ein unerwarteter Fehler ist aufgetreten. Bitte versuche es erneut.';
   
@@ -87,8 +95,8 @@ export default function CustomerOrder({ navigate }) {
   // Auto-seed/migrate products if empty or old schema
   useEffect(() => {
     if (products) {
-      const hasOldProducts = products.some(p => p.id === 'crepe-nutella');
-      if (products.length === 0 || hasOldProducts) {
+      const isMissingNewProducts = !products.some(p => p.id === 'sandwich-cheese');
+      if (products.length === 0 || isMissingNewProducts) {
         console.log("Old or missing products detected in Convex. Seeding new catalog...");
         seedProducts().catch(err => console.error("Error seeding products:", err));
       }
@@ -101,10 +109,10 @@ export default function CustomerOrder({ navigate }) {
       return;
     }
 
-    // Waffles and Crepes require customization
-    if (product.id === 'base-crepe' || product.id === 'base-waffel') {
+    // If product category is Crepes or Waffeln, it's customizable
+    if (product.category === 'Crepes' || product.category === 'Waffeln') {
       setCustomizingProduct(product);
-      setSelectedToppings([]);
+      setSelectedToppings(getDefaultToppingsForProduct(product.id));
     } else {
       // Direct add for sandwiches / drinks
       addToCart(product.id, []);
@@ -169,7 +177,8 @@ export default function CustomerOrder({ navigate }) {
 
   const submitCustomization = () => {
     if (!customizingProduct) return;
-    addToCart(customizingProduct.id, selectedToppings);
+    const baseId = customizingProduct.category === 'Crepes' ? 'base-crepe' : 'base-waffel';
+    addToCart(baseId, selectedToppings);
     setCustomizingProduct(null);
     setSelectedToppings([]);
   };
@@ -254,8 +263,8 @@ export default function CustomerOrder({ navigate }) {
     );
   }
 
-  // Filter categories. Exclude products with old IDs if any remain during transition
-  const validProducts = products.filter(p => p.id !== 'crepe-nutella');
+  // Filter categories. Exclude system base products from the storefront
+  const validProducts = products.filter(p => p.category !== 'System');
 
   const categories = validProducts.reduce((acc, prod) => {
     if (!acc[prod.category]) {
@@ -362,7 +371,10 @@ export default function CustomerOrder({ navigate }) {
             </p>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', marginBottom: '2rem' }}>
-              {AVAILABLE_TOPPINGS.map(topping => {
+              {(customizingProduct.category === 'Waffeln' 
+                ? ['Puderzucker', 'Zimt-Zucker', 'Nutella'] 
+                : AVAILABLE_TOPPINGS
+              ).map(topping => {
                 const isSelected = selectedToppings.includes(topping);
                 return (
                   <label 
@@ -401,7 +413,7 @@ export default function CustomerOrder({ navigate }) {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '1rem', marginBottom: '1.5rem' }}>
               <span style={{ color: 'var(--text-secondary)' }}>Preis pro Stück:</span>
               <strong style={{ fontSize: '1.35rem', color: 'var(--accent)', fontFamily: 'var(--font-display)' }}>
-                {(customizingProduct.price + selectedToppings.length * 0.50).toFixed(2)} €
+                {(2.00 + selectedToppings.length * 0.50).toFixed(2)} €
               </strong>
             </div>
 
@@ -437,7 +449,9 @@ export default function CustomerOrder({ navigate }) {
                   <div key={item.cartId} className="cart-item" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '0.5rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div className="cart-item-details">
-                        <h4 style={{ fontSize: '1.05rem' }}>{product.name}</h4>
+                        <h4 style={{ fontSize: '1.05rem' }}>
+                          {product.id === 'base-crepe' ? 'Crepe' : product.id === 'base-waffel' ? 'Waffel' : product.name}
+                        </h4>
                         <div className="cart-item-price">{(unitPrice * item.quantity).toFixed(2)} €</div>
                       </div>
                       <div className="cart-item-right">

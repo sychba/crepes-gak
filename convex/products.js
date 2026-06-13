@@ -22,9 +22,29 @@ export const seed = mutation({
     }
 
     const defaultProducts = [
-      { id: 'base-crepe', name: 'Crepe', price: 2.00, category: 'Crepes', description: 'Frisch gebackener Crepe. Wähle deine Toppings selbst!', available: true },
-      { id: 'base-waffel', name: 'Waffel', price: 2.00, category: 'Waffeln', description: 'Frische warme Herzwaffel. Wähle deine Toppings selbst!', available: true },
+      // Base items (hidden helper products for calculations)
+      { id: 'base-crepe', name: 'Crepe Basis', price: 2.00, category: 'System', description: 'Basis für Berechnungen.', available: false },
+      { id: 'base-waffel', name: 'Waffel Basis', price: 2.00, category: 'System', description: 'Basis für Berechnungen.', available: false },
+
+      // Crepes
+      { id: 'crepe-plain', name: 'Crepe Naturell', price: 2.00, category: 'Crepes', description: 'Frisch gebackener Crepe ohne Aufstrich.', available: true },
+      { id: 'crepe-nutella', name: 'Crepe Nutella', price: 2.50, category: 'Crepes', description: 'Mit leckerem original Nutella-Aufstrich.', available: true },
+      { id: 'crepe-zimt-zucker', name: 'Crepe Zimt & Zucker', price: 2.50, category: 'Crepes', description: 'Der Klassiker mit Zimt und feinem Zucker.', available: true },
+      { id: 'crepe-puderzucker', name: 'Crepe Puderzucker', price: 2.50, category: 'Crepes', description: 'Mit feinem Puderzucker bestäubt.', available: true },
+      { id: 'crepe-kaese-schinken', name: 'Crepe Käse & Schinken', price: 3.00, category: 'Crepes', description: 'Herzhafter Crepe mit geschmolzenem Käse und saftigem Schinken.', available: true },
+
+      // Waffeln
+      { id: 'waffel-plain', name: 'Waffel Naturell', price: 2.00, category: 'Waffeln', description: 'Frische warme Herzwaffel ohne Toppings.', available: true },
+      { id: 'waffel-nutella', name: 'Waffel Nutella', price: 2.50, category: 'Waffeln', description: 'Warme Herzwaffel mit cremigem Nutella.', available: true },
+      { id: 'waffel-zimt-zucker', name: 'Waffel Zimt & Zucker', price: 2.50, category: 'Waffeln', description: 'Warme Herzwaffel mit Zimt und Zucker.', available: true },
+      { id: 'waffel-puderzucker', name: 'Waffel Puderzucker', price: 2.50, category: 'Waffeln', description: 'Warme Herzwaffel mit feinem Puderzucker.', available: true },
+
+      // Sandwiches
+      { id: 'sandwich-cheese', name: 'Käse Sandwich', price: 2.50, category: 'Sandwiches', description: 'Knusprig getoastetes Sandwich mit viel geschmolzenem Käse.', available: true },
+      { id: 'sandwich-ham', name: 'Schinken Sandwich', price: 2.50, category: 'Sandwiches', description: 'Knusprig getoastetes Sandwich mit saftigem Schinken.', available: true },
       { id: 'sandwich-cheese-ham', name: 'Käse-Schinken Sandwich', price: 3.00, category: 'Sandwiches', description: 'Knusprig getoastetes Sandwich mit viel geschmolzenem Käse und saftigem Schinken.', available: true },
+
+      // Getränke
       { id: 'drink-fritz-kola', name: 'Fritz-Kola 0.33l', price: 2.00, category: 'Getränke', description: 'Eiskalte Fritz-Kola für den Koffeinkick.', available: true },
       { id: 'drink-wasser', name: 'Wasser 0.5l', price: 1.50, category: 'Getränke', description: 'Spritziges oder stilles Mineralwasser.', available: true }
     ];
