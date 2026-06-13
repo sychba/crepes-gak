@@ -318,7 +318,7 @@ export default function Kueche({ token }) {
       <div className="kitchen-board">
         
         {/* Column 1: Neu */}
-        <div className={`kitchen-column neu-col ${ordersNeu.length === 0 ? 'collapsed' : ''}`}>
+        <div className="kitchen-column neu-col">
           <div className="kitchen-column-header">
             <span className="kitchen-column-title">
               <InboxIcon />
@@ -391,7 +391,7 @@ export default function Kueche({ token }) {
         </div>
 
         {/* Column 2: Zubereitung */}
-        <div className={`kitchen-column prep-col ${ordersPrep.length === 0 ? 'collapsed' : ''}`}>
+        <div className="kitchen-column prep-col">
           <div className="kitchen-column-header">
             <span className="kitchen-column-title">
               <ChefIcon />
@@ -456,7 +456,7 @@ export default function Kueche({ token }) {
                     title="Zurück zu Neu"
                     onClick={() => handleUpdateStatus(order.id, 'Neu')}
                   >
-                    ↩
+                    ↩ Zurück
                   </button>
                   <button 
                     className="btn-action-primary" 
@@ -471,7 +471,7 @@ export default function Kueche({ token }) {
         </div>
 
         {/* Column 3: Abholbereit */}
-        <div className={`kitchen-column ready-col ${ordersReady.length === 0 ? 'collapsed' : ''}`}>
+        <div className="kitchen-column ready-col">
           <div className="kitchen-column-header">
             <span className="kitchen-column-title">
               <BellIcon />
@@ -536,7 +536,7 @@ export default function Kueche({ token }) {
                     title="Zurück zu Zubereitung"
                     onClick={() => handleUpdateStatus(order.id, 'Zubereitung')}
                   >
-                    ↩
+                    ↩ Zurück
                   </button>
                   <button 
                     className="btn-action-primary" 
@@ -552,7 +552,7 @@ export default function Kueche({ token }) {
         </div>
 
         {/* Column 4: Ausgeliefert */}
-        <div className={`kitchen-column done-col ${ordersDone.length === 0 ? 'collapsed' : ''}`}>
+        <div className="kitchen-column done-col">
           <div className="kitchen-column-header">
             <span className="kitchen-column-title">
               <CheckIcon />
