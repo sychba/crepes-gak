@@ -1,32 +1,25 @@
 import { useState, useEffect } from 'react';
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 export default function CustomerOrder({ navigate }) {
-  const [products, setProducts] = useState([]);
+  const products = useQuery(api.products.list);
+  const seedProducts = useMutation(api.products.seed);
+  const createOrder = useMutation(api.orders.create);
+
   const [cart, setCart] = useState({}); // { productId: quantity }
   const [isCartOpen, setIsCartOpen] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [customerClass, setCustomerClass] = useState('');
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState(null);
 
-  // Fetch products on load
+  // Auto-seed products if they are empty
   useEffect(() => {
-    fetch('/api/products')
-      .then((res) => {
-        if (!res.ok) throw new Error('Fehler beim Laden der Produkte');
-        return res.json();
-      })
-      .then((data) => {
-        setProducts(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        setError('Konnte die Produkte nicht laden. Bitte versuche es später noch einmal.');
-        setLoading(false);
-      });
-  }, []);
+    if (products && products.length === 0) {
+      console.log("No products found in Convex. Seeding defaults...");
+      seedProducts().catch(err => console.error("Error seeding products:", err));
+    }
+  }, [products, seedProducts]);
 
   const updateQuantity = (productId, delta) => {
     setCart((prevCart) => {
@@ -48,13 +41,14 @@ export default function CustomerOrder({ navigate }) {
   };
 
   const getCartTotal = () => {
+    if (!products) return 0;
     return Object.entries(cart).reduce((sum, [productId, qty]) => {
       const prod = products.find((p) => p.id === productId);
       return sum + (prod ? prod.price * qty : 0);
     }, 0);
   };
 
-  const handleCheckout = (e) => {
+  const handleCheckout = async (e) => {
     e.preventDefault();
     if (!customerName.trim()) {
       alert('Bitte gib deinen Namen an.');
@@ -62,7 +56,7 @@ export default function CustomerOrder({ navigate }) {
     }
 
     const items = Object.entries(cart).map(([productId, quantity]) => ({
-      product_id: productId,
+      productId,
       quantity,
     }));
 
@@ -73,34 +67,35 @@ export default function CustomerOrder({ navigate }) {
 
     setSubmitting(true);
 
-    fetch('/api/orders', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    try {
+      const order = await createOrder({
         customerName: customerName.trim(),
         customerClass: customerClass.trim(),
         type: 'online',
         items,
-      }),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error('Bestellung fehlgeschlagen');
-        return res.json();
-      })
-      .then((order) => {
-        setCart({});
-        setCustomerName('');
-        setCustomerClass('');
-        setIsCartOpen(false);
-        setSubmitting(false);
-        navigate(`/order/${order.id}`);
-      })
-      .catch((err) => {
-        console.error(err);
-        alert('Fehler beim Aufgeben der Bestellung. Bitte versuche es erneut.');
-        setSubmitting(false);
       });
+
+      setCart({});
+      setCustomerName('');
+      setCustomerClass('');
+      setIsCartOpen(false);
+      setSubmitting(false);
+      navigate(`/order/${order.id}`);
+    } catch (err) {
+      console.error(err);
+      alert('Fehler beim Aufgeben der Bestellung. Bitte versuche es erneut.');
+      setSubmitting(false);
+    }
   };
+
+  // Loading state
+  if (products === undefined) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh', flexDirection: 'column', gap: '1rem' }}>
+        <div className="status-badge neu" style={{ animation: 'pulse 1.5s infinite' }}>Lade leckere Crepes...</div>
+      </div>
+    );
+  }
 
   // Group products by category
   const categories = products.reduce((acc, prod) => {
@@ -110,23 +105,6 @@ export default function CustomerOrder({ navigate }) {
     acc[prod.category].push(prod);
     return acc;
   }, {});
-
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh', flexDirection: 'column', gap: '1rem' }}>
-        <div className="status-badge neu" style={{ animation: 'pulse 1.5s infinite' }}>Lade leckere Crepes...</div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="alert alert-error" style={{ maxWidth: '600px', margin: '4rem auto', textAlign: 'center' }}>
-        <h3>Ups!</h3>
-        <p>{error}</p>
-      </div>
-    );
-  }
 
   const cartCount = getCartCount();
 

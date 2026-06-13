@@ -28,3 +28,7 @@ crepes.db
 db.json
 db.json.tmp
 
+# Convex
+.convex/
+
+

@@ -1,45 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useQuery } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 export default function OrderConfirmation({ orderId, navigate }) {
-  const [order, setOrder] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const order = useQuery(api.orders.get, { ticketCode: orderId });
 
-  // Poll order details
-  useEffect(() => {
-    let timerId;
-
-    const fetchOrder = () => {
-      fetch(`/api/orders/${orderId}`)
-        .then((res) => {
-          if (!res.ok) throw new Error('Bestellung nicht gefunden');
-          return res.json();
-        })
-        .then((data) => {
-          setOrder(data);
-          setLoading(false);
-
-          // Stop polling if order is delivered
-          if (data.status === 'Ausgeliefert') {
-            clearInterval(timerId);
-          }
-        })
-        .catch((err) => {
-          console.error(err);
-          setError('Bestellung konnte nicht geladen werden.');
-          setLoading(false);
-        });
-    };
-
-    fetchOrder(); // Initial fetch
-
-    // Poll every 5 seconds
-    timerId = setInterval(fetchOrder, 5000);
-
-    return () => clearInterval(timerId);
-  }, [orderId]);
-
-  if (loading) {
+  if (order === undefined) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh', flexDirection: 'column' }}>
         <div className="status-badge neu" style={{ animation: 'pulse 1.5s infinite' }}>Lade Beleg details...</div>
@@ -47,11 +12,11 @@ export default function OrderConfirmation({ orderId, navigate }) {
     );
   }
 
-  if (error || !order) {
+  if (order === null) {
     return (
       <div className="alert alert-error" style={{ maxWidth: '500px', margin: '4rem auto', textAlign: 'center' }}>
         <h3>Fehler</h3>
-        <p>{error || 'Die Bestellung konnte nicht gefunden werden.'}</p>
+        <p>Die Bestellung konnte nicht gefunden werden.</p>
         <button className="btn btn-secondary" onClick={() => navigate('/')} style={{ marginTop: '1.5rem' }}>
           Zurück zur Startseite
         </button>
@@ -83,7 +48,7 @@ export default function OrderConfirmation({ orderId, navigate }) {
       break;
   }
 
-  const orderTotal = order.items.reduce((sum, item) => sum + (item.quantity * item.price_at_order), 0);
+  const orderTotal = order.items.reduce((sum, item) => sum + (item.quantity * item.priceAtOrder), 0);
 
   return (
     <div className="main-content">
@@ -98,7 +63,7 @@ export default function OrderConfirmation({ orderId, navigate }) {
           <div className="receipt-logo">🥞</div>
           <h2 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Bestellbestätigung</h2>
           <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-            Erstellt am {new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })} Uhr
+            Erstellt am {new Date(order.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })} Uhr
           </div>
           <div style={{ marginTop: '1rem' }}>
             <span className="receipt-id">{order.id}</span>
@@ -107,7 +72,7 @@ export default function OrderConfirmation({ orderId, navigate }) {
 
         {/* Live Status Tracker */}
         <div className="receipt-status-section">
-          <div className="receipt-status-label">Aktueller Status</div>
+          <div className="receipt-status-label">Aktueller Status (Echtzeit)</div>
           <div className={`status-badge ${statusClass}`}>{statusText}</div>
           <div className="receipt-status-desc">{statusDesc}</div>
         </div>
@@ -116,12 +81,12 @@ export default function OrderConfirmation({ orderId, navigate }) {
         <div className="receipt-details">
           <div className="receipt-details-row">
             <span className="receipt-details-label">Kunde:</span>
-            <span className="receipt-details-value">{order.customer_name}</span>
+            <span className="receipt-details-value">{order.customerName}</span>
           </div>
-          {order.customer_class && (
+          {order.customerClass && (
             <div className="receipt-details-row">
               <span className="receipt-details-label">Klasse / Ort:</span>
-              <span className="receipt-details-value">{order.customer_class}</span>
+              <span className="receipt-details-value">{order.customerClass}</span>
             </div>
           )}
           <div className="receipt-details-row">
@@ -132,13 +97,13 @@ export default function OrderConfirmation({ orderId, navigate }) {
 
         {/* Items List */}
         <div className="receipt-items-list">
-          {order.items.map((item) => (
-            <div key={item.id} className="receipt-item-row">
+          {order.items.map((item, idx) => (
+            <div key={idx} className="receipt-item-row">
               <span>
                 <span className="receipt-item-qty">{item.quantity}x</span>
-                {item.product_name}
+                {item.productName}
               </span>
-              <span>{(item.price_at_order * item.quantity).toFixed(2)} €</span>
+              <span>{(item.priceAtOrder * item.quantity).toFixed(2)} €</span>
             </div>
           ))}
         </div>
@@ -170,7 +135,7 @@ export default function OrderConfirmation({ orderId, navigate }) {
             className="btn btn-secondary" 
             onClick={() => {
               navigator.clipboard.writeText(window.location.href);
-              alert('Link in die Zwischenablage kopiert! Speicher diesen Link als Beleg.');
+              alert('Link in die Zwischenablage kopiert! Speichere diesen Link als Beleg.');
             }}
             style={{ width: '100%' }}
           >

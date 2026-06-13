@@ -1,9 +1,11 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 export default function Kueche({ token }) {
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const orders = useQuery(api.orders.listAll, { password: token });
+  const updateStatus = useMutation(api.orders.updateStatus);
+  const deleteOrder = useMutation(api.orders.deleteOrder);
   const prevOrdersRef = useRef([]);
 
   // Synthesize a pleasant "Ding" sound for new orders using Web Audio API
@@ -44,92 +46,47 @@ export default function Kueche({ token }) {
     }
   };
 
-  const fetchOrders = (isInitial = false) => {
-    fetch('/api/orders', {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error('Nicht autorisiert oder Serverfehler');
-        return res.json();
-      })
-      .then((data) => {
-        setOrders(data);
-        setLoading(false);
-
-        // Check if a new order has arrived to trigger sound alert
-        if (!isInitial && prevOrdersRef.current.length > 0) {
-          const newOrders = data.filter(order => 
-            order.status === 'Neu' && 
-            !prevOrdersRef.current.some(prevOrder => prevOrder.id === order.id)
-          );
-          if (newOrders.length > 0) {
-            playNewOrderSound();
-          }
-        }
-
-        prevOrdersRef.current = data;
-      })
-      .catch((err) => {
-        console.error(err);
-        setError('Konnte Bestellungen nicht laden.');
-        setLoading(false);
-      });
-  };
-
-  // Poll orders every 4 seconds
+  // Sound trigger on new orders in queue
   useEffect(() => {
-    fetchOrders(true);
-    const intervalId = setInterval(() => fetchOrders(false), 4000);
-    return () => clearInterval(intervalId);
-  }, [token]);
+    if (orders === undefined) return;
+    
+    if (prevOrdersRef.current.length > 0) {
+      const newOrders = orders.filter(order => 
+        order.status === 'Neu' && 
+        !prevOrdersRef.current.some(prevOrder => prevOrder.id === order.id)
+      );
+      if (newOrders.length > 0) {
+        playNewOrderSound();
+      }
+    }
+    prevOrdersRef.current = orders;
+  }, [orders]);
 
-  const handleUpdateStatus = (orderId, newStatus) => {
-    fetch(`/api/orders/${orderId}/status`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({ status: newStatus })
-    })
-      .then(res => {
-        if (!res.ok) throw new Error('Statusänderung fehlgeschlagen');
-        return res.json();
-      })
-      .then(() => {
-        // Optimistic local update
-        setOrders(prev => prev.map(order => 
-          order.id === orderId ? { ...order, status: newStatus, updated_at: Date.now() } : order
-        ));
-      })
-      .catch(err => {
-        console.error(err);
-        alert('Fehler beim Aktualisieren des Status.');
+  const handleUpdateStatus = async (orderId, newStatus) => {
+    try {
+      await updateStatus({
+        password: token,
+        ticketCode: orderId,
+        status: newStatus
       });
+    } catch (err) {
+      console.error(err);
+      alert('Fehler beim Aktualisieren des Status.');
+    }
   };
 
-  const handleDeleteOrder = (orderId) => {
+  const handleDeleteOrder = async (orderId) => {
     if (!confirm('Möchtest du diese Bestellung wirklich löschen?')) return;
 
-    fetch(`/api/orders/${orderId}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    })
-      .then(res => {
-        if (!res.ok) throw new Error('Löschen fehlgeschlagen');
-        return res.json();
-      })
-      .then(() => {
-        setOrders(prev => prev.filter(order => order.id !== orderId));
-      })
-      .catch(err => {
-        console.error(err);
-        alert('Fehler beim Löschen der Bestellung.');
+    try {
+      await deleteOrder({
+        password: token,
+        ticketCode: orderId
       });
+    } catch (err) {
+      console.error(err);
+      alert('Fehler beim Löschen der Bestellung.');
+    }
   };
 
   // Helper: Get elapsed time in minutes
@@ -148,19 +105,19 @@ export default function Kueche({ token }) {
 
   // Smart feature: Summarize ingredients/products needed for "Neu" and "Zubereitung" states
   const getBatchSummary = () => {
+    if (!orders) return [];
     const counts = {};
     orders
       .filter(order => order.status === 'Neu' || order.status === 'Zubereitung')
       .forEach(order => {
         order.items.forEach(item => {
-          counts[item.product_name] = (counts[item.product_name] || 0) + item.quantity;
+          counts[item.productName] = (counts[item.productName] || 0) + item.quantity;
         });
       });
     return Object.entries(counts);
   };
 
-  if (loading) return <div>Lade Küchenboard...</div>;
-  if (error) return <div className="alert alert-error">{error}</div>;
+  if (orders === undefined) return <div>Lade Küchenboard...</div>;
 
   // Filter columns
   const ordersNeu = orders.filter(o => o.status === 'Neu');
@@ -173,13 +130,13 @@ export default function Kueche({ token }) {
   return (
     <div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-        <h2 style={{ fontFamily: 'var(--font-display)' }}>🍳 Küche (Bestellungsübersicht)</h2>
+        <h2 style={{ fontFamily: 'var(--font-display)' }}>🍳 Küche (Bestellungsübersicht - Echtzeit)</h2>
         <button 
           className="btn btn-secondary" 
-          onClick={() => { fetchOrders(false); playNewOrderSound(); }} 
+          onClick={playNewOrderSound} 
           style={{ fontSize: '0.85rem', padding: '0.4rem 1rem' }}
         >
-          🔄 Aktualisieren & Ton testen
+          🔊 Ton testen
         </button>
       </div>
 
@@ -217,7 +174,7 @@ export default function Kueche({ token }) {
             <span className="kitchen-column-count">{ordersNeu.length}</span>
           </div>
           {ordersNeu.map(order => {
-            const minutes = getMinutesElapsed(order.created_at);
+            const minutes = getMinutesElapsed(order.createdAt);
             return (
               <div key={order.id} className="kitchen-order-card">
                 <span className={`kitchen-order-type ${order.type}`}>{order.type}</span>
@@ -234,13 +191,13 @@ export default function Kueche({ token }) {
                   </span>
                 </div>
                 <div>
-                  <div className="kitchen-order-customer">{order.customer_name}</div>
-                  {order.customer_class && <span className="kitchen-order-class">{order.customer_class}</span>}
+                  <div className="kitchen-order-customer">{order.customerName}</div>
+                  {order.customerClass && <span className="kitchen-order-class">{order.customerClass}</span>}
                 </div>
                 <div className="kitchen-order-items">
-                  {order.items.map(item => (
-                    <div key={item.id} className="kitchen-order-item">
-                      <span>{item.product_name}</span>
+                  {order.items.map((item, idx) => (
+                    <div key={idx} className="kitchen-order-item">
+                      <span>{item.productName}</span>
                       <span className="kitchen-order-item-qty">x{item.quantity}</span>
                     </div>
                   ))}
@@ -277,16 +234,16 @@ export default function Kueche({ token }) {
               <span className={`kitchen-order-type ${order.type}`}>{order.type}</span>
               <div className="kitchen-order-header">
                 <span className="kitchen-order-id">{order.id}</span>
-                <span className="kitchen-order-time">vor {getMinutesElapsed(order.created_at)} Min.</span>
+                <span className="kitchen-order-time">vor {getMinutesElapsed(order.createdAt)} Min.</span>
               </div>
               <div>
-                <div className="kitchen-order-customer">{order.customer_name}</div>
-                {order.customer_class && <span className="kitchen-order-class">{order.customer_class}</span>}
+                <div className="kitchen-order-customer">{order.customerName}</div>
+                {order.customerClass && <span className="kitchen-order-class">{order.customerClass}</span>}
               </div>
               <div className="kitchen-order-items">
-                {order.items.map(item => (
-                  <div key={item.id} className="kitchen-order-item">
-                    <span>{item.product_name}</span>
+                {order.items.map((item, idx) => (
+                  <div key={idx} className="kitchen-order-item">
+                    <span>{item.productName}</span>
                     <span className="kitchen-order-item-qty">x{item.quantity}</span>
                   </div>
                 ))}
@@ -322,16 +279,16 @@ export default function Kueche({ token }) {
               <span className={`kitchen-order-type ${order.type}`}>{order.type}</span>
               <div className="kitchen-order-header">
                 <span className="kitchen-order-id" style={{ color: '#10b981' }}>{order.id}</span>
-                <span className="kitchen-order-time">bereit seit {getMinutesElapsed(order.updated_at)} Min.</span>
+                <span className="kitchen-order-time">bereit seit {getMinutesElapsed(order.updatedAt)} Min.</span>
               </div>
               <div>
-                <div className="kitchen-order-customer">{order.customer_name}</div>
-                {order.customer_class && <span className="kitchen-order-class">{order.customer_class}</span>}
+                <div className="kitchen-order-customer">{order.customerName}</div>
+                {order.customerClass && <span className="kitchen-order-class">{order.customerClass}</span>}
               </div>
               <div className="kitchen-order-items">
-                {order.items.map(item => (
-                  <div key={item.id} className="kitchen-order-item">
-                    <span>{item.product_name}</span>
+                {order.items.map((item, idx) => (
+                  <div key={idx} className="kitchen-order-item">
+                    <span>{item.productName}</span>
                     <span className="kitchen-order-item-qty">x{item.quantity}</span>
                   </div>
                 ))}
@@ -370,13 +327,13 @@ export default function Kueche({ token }) {
                 <span className="kitchen-order-time">fertig</span>
               </div>
               <div>
-                <div className="kitchen-order-customer">{order.customer_name}</div>
-                {order.customer_class && <span className="kitchen-order-class">{order.customer_class}</span>}
+                <div className="kitchen-order-customer">{order.customerName}</div>
+                {order.customerClass && <span className="kitchen-order-class">{order.customerClass}</span>}
               </div>
               <div className="kitchen-order-items">
-                {order.items.map(item => (
-                  <div key={item.id} className="kitchen-order-item">
-                    <span>{item.product_name}</span>
+                {order.items.map((item, idx) => (
+                  <div key={idx} className="kitchen-order-item">
+                    <span>{item.productName}</span>
                     <span className="kitchen-order-item-qty">x{item.quantity}</span>
                   </div>
                 ))}

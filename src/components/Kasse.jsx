@@ -1,31 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../convex/_generated/api";
 
 export default function Kasse({ token }) {
-  const [products, setProducts] = useState([]);
+  const products = useQuery(api.products.list);
+  const createOrder = useMutation(api.orders.create);
+
   const [cart, setCart] = useState({}); // { productId: quantity }
   const [customerName, setCustomerName] = useState('');
   const [customerClass, setCustomerClass] = useState('');
-  const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [successOrder, setSuccessOrder] = useState(null);
-  const [error, setError] = useState(null);
-
-  useEffect(() => {
-    fetch('/api/products')
-      .then((res) => {
-        if (!res.ok) throw new Error('Fehler beim Laden der Produkte');
-        return res.json();
-      })
-      .then((data) => {
-        setProducts(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        console.error(err);
-        setError('Produkte konnten nicht geladen werden.');
-        setLoading(false);
-      });
-  }, []);
 
   const updateQuantity = (productId, delta) => {
     setCart((prevCart) => {
@@ -49,13 +34,14 @@ export default function Kasse({ token }) {
   };
 
   const getCartTotal = () => {
+    if (!products) return 0;
     return Object.entries(cart).reduce((sum, [productId, qty]) => {
       const prod = products.find((p) => p.id === productId);
       return sum + (prod ? prod.price * qty : 0);
     }, 0);
   };
 
-  const handleCheckout = (e) => {
+  const handleCheckout = async (e) => {
     e.preventDefault();
     if (!customerName.trim()) {
       alert('Bitte gib einen Kundennamen ein.');
@@ -63,7 +49,7 @@ export default function Kasse({ token }) {
     }
 
     const items = Object.entries(cart).map(([productId, quantity]) => ({
-      product_id: productId,
+      productId,
       quantity,
     }));
 
@@ -75,37 +61,28 @@ export default function Kasse({ token }) {
     setSubmitting(true);
     setSuccessOrder(null);
 
-    // Express order as staff
-    fetch('/api/orders', {
-      method: 'POST',
-      headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`
-      },
-      body: JSON.stringify({
+    try {
+      const order = await createOrder({
         customerName: customerName.trim() + ' (Vor Ort)',
         customerClass: customerClass.trim(),
         type: 'kasse',
         items,
-      }),
-    })
-      .then((res) => {
-        if (!res.ok) throw new Error('Kassenbestellung fehlgeschlagen');
-        return res.json();
-      })
-      .then((order) => {
-        setSuccessOrder(order);
-        clearCart();
-        setSubmitting(false);
-        // Clear success banner after 8 seconds
-        setTimeout(() => setSuccessOrder(null), 8000);
-      })
-      .catch((err) => {
-        console.error(err);
-        alert('Fehler beim Buchen der Bestellung.');
-        setSubmitting(false);
       });
+
+      setSuccessOrder(order);
+      clearCart();
+      setSubmitting(false);
+      // Clear success banner after 8 seconds
+      setTimeout(() => setSuccessOrder(null), 8000);
+    } catch (err) {
+      console.error(err);
+      alert('Fehler beim Buchen der Bestellung.');
+      setSubmitting(false);
+    }
   };
+
+  // Loading state
+  if (products === undefined) return <div>Lade Produkte...</div>;
 
   // Group products by category
   const categories = products.reduce((acc, prod) => {
@@ -116,9 +93,6 @@ export default function Kasse({ token }) {
     return acc;
   }, {});
 
-  if (loading) return <div>Lade Produkte...</div>;
-  if (error) return <div className="alert alert-error">{error}</div>;
-
   return (
     <div>
       <h2 style={{ marginBottom: '1.5rem', fontFamily: 'var(--font-display)' }}>💰 Kasse (Vor-Ort-Bestellung)</h2>
@@ -126,10 +100,10 @@ export default function Kasse({ token }) {
       {successOrder && (
         <div className="alert alert-success" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <strong>Bestellung erfolgreich gebucht! Ticket-ID: {successOrder.id}</strong> ({successOrder.customer_name})
+            <strong>Bestellung erfolgreich gebucht! Ticket-ID: {successOrder.id}</strong> ({successOrder.customerName})
           </div>
           <a href={`/order/${successOrder.id}`} target="_blank" rel="noreferrer" style={{ color: '#fff', textDecoration: 'underline', fontWeight: 600 }}>
-            Releg-Link öffnen ↗
+            Beleg-Link öffnen ↗
           </a>
         </div>
       )}
@@ -142,7 +116,7 @@ export default function Kasse({ token }) {
               <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.25rem' }}>
                 {categoryName}
               </h3>
-              <div className="products-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))' }}>
+              <div className="products-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1rem' }}>
                 {catProducts.map((product) => {
                   const qty = cart[product.id] || 0;
                   return (
