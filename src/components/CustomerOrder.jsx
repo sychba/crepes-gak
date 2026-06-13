@@ -181,6 +181,12 @@ export default function CustomerOrder({ navigate }) {
 
     setSubmitting(true);
 
+    // Watchdog timer to prevent UI lockup if the server or connection is offline/slow
+    const watchdog = setTimeout(() => {
+      alert('Die Verbindung zum Server dauert ungewöhnlich lange. Bitte stelle sicher, dass eine aktive Internetverbindung besteht und der Server erreichbar ist.');
+      setSubmitting(false);
+    }, 8000);
+
     try {
       const items = cart.map(item => ({
         productId: item.productId,
@@ -195,6 +201,8 @@ export default function CustomerOrder({ navigate }) {
         type: 'online',
         items,
       });
+      
+      clearTimeout(watchdog);
 
       // Update local storage order timestamps on success
       const storedTimestamps = JSON.parse(localStorage.getItem('crepes_order_timestamps') || '[]');
@@ -208,6 +216,7 @@ export default function CustomerOrder({ navigate }) {
       setSubmitting(false);
       navigate(`/order/${order.id}`);
     } catch (err) {
+      clearTimeout(watchdog);
       console.error(err);
       alert(err.message || 'Fehler beim Aufgeben der Bestellung. Bitte versuche es erneut.');
       setSubmitting(false);

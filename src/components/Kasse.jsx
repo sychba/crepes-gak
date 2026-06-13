@@ -130,6 +130,12 @@ export default function Kasse({ token }) {
     setSubmitting(true);
     setSuccessOrder(null);
 
+    // Watchdog timer to prevent UI lockup if the server or connection is offline/slow
+    const watchdog = setTimeout(() => {
+      alert('Die Verbindung zum Server dauert ungewöhnlich lange. Bitte stelle sicher, dass eine aktive Internetverbindung besteht und der Server erreichbar ist.');
+      setSubmitting(false);
+    }, 8000);
+
     try {
       const items = cart.map(item => ({
         productId: item.productId,
@@ -145,12 +151,14 @@ export default function Kasse({ token }) {
         items,
       });
 
+      clearTimeout(watchdog);
       setSuccessOrder(order);
       clearCart();
       setSubmitting(false);
       // Clear success banner after 8 seconds
       setTimeout(() => setSuccessOrder(null), 8000);
     } catch (err) {
+      clearTimeout(watchdog);
       console.error(err);
       alert('Fehler beim Buchen der Bestellung: ' + (err.message || err));
       setSubmitting(false);

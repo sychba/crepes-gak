@@ -44,6 +44,13 @@
   padding: 0;
 }
 
+html, body {
+  overflow-x: hidden;
+  max-width: 100%;
+  position: relative;
+  touch-action: manipulation;
+}
+
 body {
   background-color: var(--bg-primary);
   color: var(--text-primary);
@@ -51,7 +58,6 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   line-height: 1.5;
-  overflow-x: hidden;
 }
 
 h1, h2, h3, h4, h5, h6 {
