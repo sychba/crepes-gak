@@ -77,7 +77,8 @@ export default function CustomerOrder({ navigate }) {
   useEffect(() => {
     if (products) {
       const isMissingNewProducts = !products.some(p => p.id === 'sandwich-cheese');
-      if (products.length === 0 || isMissingNewProducts) {
+      const isOldDescription = products.some(p => p.id === 'crepe-plain' && !p.description.includes('selbst Gestalten'));
+      if (products.length === 0 || isMissingNewProducts || isOldDescription) {
         console.log("Old or missing products detected in Convex. Seeding new catalog...");
         seedProducts().catch(err => console.error("Error seeding products:", err));
       }

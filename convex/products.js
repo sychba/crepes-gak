@@ -27,14 +27,14 @@ export const seed = mutation({
       { id: 'base-waffel', name: 'Waffel Basis', price: 2.00, category: 'System', description: 'Basis für Berechnungen.', available: false },
 
       // Crepes
-      { id: 'crepe-plain', name: 'Crepe Naturell', price: 2.00, category: 'Crepes', description: 'Frisch gebackener Crepe ohne Aufstrich.', available: true },
+      { id: 'crepe-plain', name: 'Crepe Naturell', price: 2.00, category: 'Crepes', description: 'Frisch gebackener Crepe ohne Aufstrich – bereit zum selbst Gestalten mit deinen Wunsch-Toppings.', available: true },
       { id: 'crepe-nutella', name: 'Crepe Nutella', price: 2.50, category: 'Crepes', description: 'Mit leckerem original Nutella-Aufstrich.', available: true },
       { id: 'crepe-zimt-zucker', name: 'Crepe Zimt & Zucker', price: 2.50, category: 'Crepes', description: 'Der Klassiker mit Zimt und feinem Zucker.', available: true },
       { id: 'crepe-puderzucker', name: 'Crepe Puderzucker', price: 2.50, category: 'Crepes', description: 'Mit feinem Puderzucker bestäubt.', available: true },
       { id: 'crepe-kaese-schinken', name: 'Crepe Käse & Schinken', price: 3.00, category: 'Crepes', description: 'Herzhafter Crepe mit geschmolzenem Käse und saftigem Schinken.', available: true },
 
       // Waffeln
-      { id: 'waffel-plain', name: 'Waffel Naturell', price: 2.00, category: 'Waffeln', description: 'Frische warme Herzwaffel ohne Toppings.', available: true },
+      { id: 'waffel-plain', name: 'Waffel Naturell', price: 2.00, category: 'Waffeln', description: 'Frische warme Herzwaffel ohne Toppings – bereit zum selbst Gestalten mit deinen Wunsch-Toppings.', available: true },
       { id: 'waffel-nutella', name: 'Waffel Nutella', price: 2.50, category: 'Waffeln', description: 'Warme Herzwaffel mit cremigem Nutella.', available: true },
       { id: 'waffel-zimt-zucker', name: 'Waffel Zimt & Zucker', price: 2.50, category: 'Waffeln', description: 'Warme Herzwaffel mit Zimt und Zucker.', available: true },
       { id: 'waffel-puderzucker', name: 'Waffel Puderzucker', price: 2.50, category: 'Waffeln', description: 'Warme Herzwaffel mit feinem Puderzucker.', available: true },
