@@ -149,23 +149,36 @@ export default function CustomerOrder({ navigate }) {
           <div className="products-grid">
             {catProducts.map((product) => {
               const qty = cart[product.id] || 0;
+              const imageUrl = `/images/${product.id}.png`;
               return (
                 <div key={product.id} className="product-card">
-                  <div className="product-info">
-                    <h3>{product.name}</h3>
-                    <p className="product-desc">{product.description}</p>
+                  <div className="product-image-container">
+                    <img
+                      src={imageUrl}
+                      alt={product.name}
+                      className="product-image"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                      }}
+                    />
                   </div>
-                  <div className="product-footer">
-                    <div className="product-price">{product.price.toFixed(2)} €</div>
-                    {qty > 0 ? (
-                      <div className="quantity-control">
-                        <button className="quantity-btn" onClick={() => updateQuantity(product.id, -1)}>−</button>
-                        <span className="quantity-display">{qty}</span>
-                        <button className="quantity-btn" onClick={() => updateQuantity(product.id, 1)}>+</button>
-                      </div>
-                    ) : (
-                      <button className="add-btn" onClick={() => updateQuantity(product.id, 1)}>Hinzufügen</button>
-                    )}
+                  <div className="product-card-body">
+                    <div className="product-info">
+                      <h3>{product.name}</h3>
+                      <p className="product-desc">{product.description}</p>
+                    </div>
+                    <div className="product-footer">
+                      <div className="product-price">{product.price.toFixed(2)} €</div>
+                      {qty > 0 ? (
+                        <div className="quantity-control">
+                          <button className="quantity-btn" onClick={() => updateQuantity(product.id, -1)}>−</button>
+                          <span className="quantity-display">{qty}</span>
+                          <button className="quantity-btn" onClick={() => updateQuantity(product.id, 1)}>+</button>
+                        </div>
+                      ) : (
+                        <button className="add-btn" onClick={() => updateQuantity(product.id, 1)}>Hinzufügen</button>
+                      )}
+                    </div>
                   </div>
                 </div>
               );
