@@ -1,7 +1,29 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Kasse from './Kasse';
 import Kueche from './Kueche';
 import GerateManager from './GerateManager';
+
+// Premium Inline SVGs for Navigation Tabs
+const CookIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M6 18h12V9c0-3.3-2.7-6-6-6S6 5.7 6 9v9z"/>
+    <path d="M3 21h18"/>
+  </svg>
+);
+
+const CreditCardIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+    <line x1="1" y1="10" x2="23" y2="10"/>
+  </svg>
+);
+
+const DeviceIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+    <line x1="12" y1="18" x2="12.01" y2="18"/>
+  </svg>
+);
 
 export default function Terminal({ navigate }) {
   const [token, setToken] = useState(localStorage.getItem('crepes_staff_token') || null);
@@ -14,9 +36,6 @@ export default function Terminal({ navigate }) {
     e.preventDefault();
     setLoginError(null);
 
-    // Validate directly on the client.
-    // The Convex database functions themselves also check this password ('crepes2026')
-    // for all query and mutation executions, ensuring proper server-side security.
     if (password === 'crepes2026') {
       localStorage.setItem('crepes_staff_token', password);
       setToken(password);
@@ -80,8 +99,7 @@ export default function Terminal({ navigate }) {
       <header className="terminal-header">
         <div className="terminal-title-area">
           <a href="#" onClick={(e) => { e.preventDefault(); navigate('/'); }} className="logo-container">
-            <span className="logo-icon">🥞</span>
-            <span className="logo-text">Crepes GAK</span>
+            <span className="logo-text">🥞 Crepes GAK</span>
           </a>
           <span className="terminal-badge">Terminal</span>
         </div>
@@ -92,19 +110,22 @@ export default function Terminal({ navigate }) {
             className={`terminal-tab-btn ${activeTab === 'kueche' ? 'active' : ''}`}
             onClick={() => setActiveTab('kueche')}
           >
-            🍳 Küche
+            <CookIcon />
+            <span>Küche</span>
           </button>
           <button
             className={`terminal-tab-btn ${activeTab === 'kasse' ? 'active' : ''}`}
             onClick={() => setActiveTab('kasse')}
           >
-            💰 Kasse
+            <CreditCardIcon />
+            <span>Kasse</span>
           </button>
           <button
             className={`terminal-tab-btn ${activeTab === 'gerate' ? 'active' : ''}`}
             onClick={() => setActiveTab('gerate')}
           >
-            📱 Geräte
+            <DeviceIcon />
+            <span>Geräte</span>
           </button>
         </div>
 

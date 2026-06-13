@@ -54,20 +54,67 @@ export default function Kasse({ token }) {
   const [customizingProduct, setCustomizingProduct] = useState(null);
   const [selectedToppings, setSelectedToppings] = useState([]);
 
-  const handleAddClick = (product) => {
-    // If product category is Crepes or Waffeln, it's customizable
-    if (product.category === 'Crepes' || product.category === 'Waffeln') {
-      setCustomizingProduct(product);
-      setSelectedToppings(getDefaultToppingsForProduct(product.id));
+  // Map database items and base crepes in cart back to their UI card product IDs
+  const getProductCountInCart = (productId) => {
+    return cart.reduce((sum, item) => {
+      // Direct product matches (Drinks, Sandwiches)
+      if (item.productId === productId) {
+        return sum + item.quantity;
+      }
+      
+      // Base Crepes in cart mapped to their preset UI products
+      if (item.productId === 'base-crepe') {
+        const hasNutella = item.toppings.includes('Nutella');
+        const hasZimt = item.toppings.includes('Zimt-Zucker');
+        const hasPuder = item.toppings.includes('Puderzucker');
+        const hasCheese = item.toppings.includes('Käse');
+        const hasHam = item.toppings.includes('Schinken');
+        
+        if (productId === 'crepe-plain' && item.toppings.length === 0) return sum + item.quantity;
+        if (productId === 'crepe-nutella' && hasNutella && !hasCheese && !hasHam) return sum + item.quantity;
+        if (productId === 'crepe-zimt-zucker' && hasZimt) return sum + item.quantity;
+        if (productId === 'crepe-puderzucker' && hasPuder) return sum + item.quantity;
+        if (productId === 'crepe-kaese-schinken' && hasCheese && hasHam) return sum + item.quantity;
+      }
+      
+      // Base Waffeln in cart mapped to their preset UI products
+      if (item.productId === 'base-waffel') {
+        const hasNutella = item.toppings.includes('Nutella');
+        const hasZimt = item.toppings.includes('Zimt-Zucker');
+        const hasPuder = item.toppings.includes('Puderzucker');
+        
+        if (productId === 'waffel-plain' && item.toppings.length === 0) return sum + item.quantity;
+        if (productId === 'waffel-nutella' && hasNutella) return sum + item.quantity;
+        if (productId === 'waffel-zimt-zucker' && hasZimt) return sum + item.quantity;
+        if (productId === 'waffel-puderzucker' && hasPuder) return sum + item.quantity;
+      }
+      
+      return sum;
+    }, 0);
+  };
+
+  // Tap action: Instant add standard product to cart
+  const handleCardTap = (product) => {
+    if (product.category === 'Crepes') {
+      const defaultToppings = getDefaultToppingsForProduct(product.id);
+      addToCart('base-crepe', defaultToppings);
+    } else if (product.category === 'Waffeln') {
+      const defaultToppings = getDefaultToppingsForProduct(product.id);
+      addToCart('base-waffel', defaultToppings);
     } else {
-      // Direct add for sandwiches / drinks
       addToCart(product.id, []);
     }
   };
 
+  // Open customize toppings modal
+  const handleCustomizeClick = (e, product) => {
+    e.stopPropagation(); // Avoid triggering standard card tap add
+    setCustomizingProduct(product);
+    setSelectedToppings(getDefaultToppingsForProduct(product.id));
+  };
+
   const addToCart = (productId, toppings) => {
     setCart((prevCart) => {
-      // Sort toppings to ensure same combination gets same cartId
       const sortedToppings = [...toppings].sort();
       const cartId = productId + (sortedToppings.length > 0 ? '_' + sortedToppings.join('-') : '');
       
@@ -161,9 +208,8 @@ export default function Kasse({ token }) {
     setSubmitting(true);
     setSuccessOrder(null);
 
-    // Watchdog timer to prevent UI lockup if the server or connection is offline/slow
     const watchdog = setTimeout(() => {
-      setErrorMessage('Die Verbindung zum Server dauert ungewöhnlich lange. Bitte stelle sicher, dass eine aktive Internetverbindung besteht und der Server erreichbar ist.');
+      setErrorMessage('Die Verbindung zum Server dauert ungewöhnlich lange. Bitte vergewissere dich, dass der Server läuft.');
       setSubmitting(false);
     }, 8000);
 
@@ -186,7 +232,7 @@ export default function Kasse({ token }) {
       setSuccessOrder(order);
       clearCart();
       setSubmitting(false);
-      // Clear success banner after 8 seconds
+      
       setTimeout(() => setSuccessOrder(null), 8000);
     } catch (err) {
       clearTimeout(watchdog);
@@ -199,22 +245,24 @@ export default function Kasse({ token }) {
   if (products === undefined) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '40vh', flexDirection: 'column', gap: '1rem' }}>
-        <div className="status-badge neu" style={{ animation: 'pulse 1.5s infinite' }}>Lade Produkte...</div>
+        <div className="status-badge neu" style={{ animation: 'pulse 1.5s infinite' }}>Lade Kassenprodukte...</div>
       </div>
     );
   }
 
-  // Filter categories. Exclude system base products from the storefront
-  const validProducts = products.filter(p => p.category !== 'System');
+  // Filter out system helper items and display the sale catalog
+  const saleProducts = products.filter(p => p.category !== 'System');
 
-  // Group products by category
-  const categories = validProducts.reduce((acc, prod) => {
-    if (!acc[prod.category]) {
-      acc[prod.category] = [];
-    }
-    acc[prod.category].push(prod);
-    return acc;
-  }, {});
+  // Define a logical ordering of categories for standard POS layout
+  const categoryOrder = ['Crepes', 'Waffeln', 'Sandwiches', 'Getränke'];
+  
+  // Sort products so they flow in order of category, then by ID/price
+  const sortedProducts = [...saleProducts].sort((a, b) => {
+    const idxA = categoryOrder.indexOf(a.category);
+    const idxB = categoryOrder.indexOf(b.category);
+    if (idxA !== idxB) return idxA - idxB;
+    return a.id.localeCompare(b.id);
+  });
 
   const nonWaterCount = cart.reduce((sum, item) => {
     return item.productId !== 'drink-wasser' ? sum + item.quantity : sum;
@@ -222,117 +270,74 @@ export default function Kasse({ token }) {
 
   return (
     <div>
-      <h2 style={{ marginBottom: '1.5rem', fontFamily: 'var(--font-display)' }}>💰 Kasse (Vor-Ort-Bestellung)</h2>
+      <h2 style={{ marginBottom: '1.5rem', fontFamily: 'var(--font-display)' }}>Kasse (Vor-Ort-Bestellung)</h2>
 
       {successOrder && (
         <div className="alert alert-success" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
           <div>
-            <strong>Bestellung erfolgreich gebucht! Ticket-ID: {successOrder.id}</strong> ({successOrder.customerName})
+            <strong>Bestellung gebucht! Ticket-ID: {successOrder.id}</strong> ({successOrder.customerName})
           </div>
           <a href={`/order/${successOrder.id}`} target="_blank" rel="noreferrer" style={{ color: '#fff', textDecoration: 'underline', fontWeight: 600 }}>
-            Beleg-Link öffnen ↗
+            Beleg öffnen ↗
           </a>
         </div>
       )}
 
       <div className="kasse-layout">
-        {/* Products selection list */}
-        <div className="kasse-products">
-          {Object.entries(categories).map(([categoryName, catProducts]) => (
-            <div key={categoryName}>
-              <h3 style={{ fontSize: '1.2rem', marginBottom: '1rem', borderBottom: '1px solid var(--border-color)', paddingBottom: '0.25rem' }}>
-                {categoryName}
-              </h3>
-              <div className="products-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '1rem' }}>
-                {catProducts.map((product) => {
-                  const isCustomizable = product.id === 'base-crepe' || product.id === 'base-waffel';
-                  
-                  // For customizable items, we show the sum of all variations in cart
-                  // For non-customizable items, there is only one entry with empty toppings
-                  const countInCart = cart
-                    .filter(item => item.productId === product.id)
-                    .reduce((sum, item) => sum + item.quantity, 0);
+        
+        {/* Products Grid (POS Rapid Tapping Grid) */}
+        <div className="pos-products-grid">
+          {sortedProducts.map((product) => {
+            const count = getProductCountInCart(product.id);
+            const isCustomizableCategory = product.category === 'Crepes' || product.category === 'Waffeln';
 
-                  return (
-                    <div 
-                      key={product.id} 
-                      className={`product-card ${countInCart > 0 ? 'active-item' : ''}`}
-                      style={{ 
-                        minHeight: '130px', 
-                        padding: '1rem',
-                        borderColor: countInCart > 0 ? 'var(--accent)' : 'rgba(255,255,255,0.04)',
-                        backgroundColor: countInCart > 0 ? 'rgba(245, 158, 11, 0.03)' : 'var(--bg-secondary)'
-                      }}
-                    >
-                      <div>
-                        <h4 style={{ fontSize: '1.05rem', marginBottom: '0.25rem' }}>{product.name}</h4>
-                        <div style={{ color: 'var(--accent)', fontWeight: 700 }}>
-                          {product.price.toFixed(2)} €
-                          {isCustomizable && (
-                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', fontWeight: 'normal' }}>
-                              + 0.50 € je Extra
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="product-footer" style={{ marginTop: '1rem' }}>
-                        {isCustomizable ? (
-                          <button 
-                            type="button" 
-                            className="btn btn-secondary" 
-                            style={{ width: '100%', padding: '0.4rem', fontSize: '0.85rem' }} 
-                            onClick={() => handleAddClick(product)}
-                          >
-                            + Hinzufügen {countInCart > 0 ? `(${countInCart})` : ''}
-                          </button>
-                        ) : (
-                          // Non-customizable products can show directly +/- quantity control
-                          countInCart > 0 ? (
-                            <div className="quantity-control" style={{ width: '100%', justifyContent: 'space-between' }}>
-                              <button 
-                                type="button" 
-                                className="quantity-btn" 
-                                onClick={() => updateQuantity(product.id, -1)}
-                              >
-                                −
-                              </button>
-                              <span className="quantity-display">{countInCart}</span>
-                              <button 
-                                type="button" 
-                                className="quantity-btn" 
-                                onClick={() => updateQuantity(product.id, 1)}
-                              >
-                                +
-                              </button>
-                            </div>
-                          ) : (
-                            <button 
-                              type="button" 
-                              className="btn btn-secondary" 
-                              style={{ width: '100%', padding: '0.4rem', fontSize: '0.85rem' }} 
-                              onClick={() => handleAddClick(product)}
-                            >
-                              + Hinzufügen
-                            </button>
-                          )
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+            return (
+              <div 
+                key={product.id} 
+                className={`pos-product-card ${count > 0 ? 'active-item' : ''}`}
+                onClick={() => handleCardTap(product)}
+              >
+                {/* Quantity Badge in top-left */}
+                {count > 0 && (
+                  <span className="pos-product-qty-badge">{count}x</span>
+                )}
+
+                <div className="pos-product-header">
+                  <span className="pos-product-name">{product.name}</span>
+                  <span className="pos-product-price">{product.price.toFixed(2)} €</span>
+                </div>
+
+                <div className="pos-product-desc">
+                  {product.description}
+                </div>
+
+                {/* Customize button (Pencil Icon) for Crepes/Waffeln */}
+                {isCustomizableCategory && (
+                  <button 
+                    type="button" 
+                    className="pos-customize-btn" 
+                    title="Toppings anpassen"
+                    onClick={(e) => handleCustomizeClick(e, product)}
+                  >
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4z" />
+                    </svg>
+                  </button>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
-        {/* Floating Quick Order Cart Panel */}
+        {/* Sticky Shopping Cart Column */}
         <div className="kasse-cart-panel">
           <h3 className="kasse-cart-title">Einkaufswagen</h3>
           
-          <div style={{ flex: 1, overflowY: 'auto', marginBottom: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+          <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {cart.length === 0 ? (
-              <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2rem 0' }}>
-                Warenkorb leer. Wähle Produkte aus.
+              <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2.5rem 0', fontSize: '0.9rem' }}>
+                Warenkorb leer.
               </div>
             ) : (
               cart.map((item) => {
@@ -347,22 +352,23 @@ export default function Kasse({ token }) {
                     style={{ 
                       display: 'flex', 
                       flexDirection: 'column', 
-                      gap: '0.5rem', 
+                      gap: '0.35rem', 
                       backgroundColor: 'var(--bg-tertiary)', 
-                      padding: '0.65rem 0.75rem', 
+                      padding: '0.5rem 0.65rem', 
                       borderRadius: '8px' 
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <div>
-                        <div style={{ fontSize: '0.9rem', fontWeight: 600 }}>
+                      <div style={{ maxWidth: '65%' }}>
+                        <div style={{ fontSize: '0.85rem', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {product.id === 'base-crepe' ? 'Crepe' : product.id === 'base-waffel' ? 'Waffel' : product.name}
                         </div>
                         <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
-                          {item.quantity}x {unitPrice.toFixed(2)} €
+                          {(unitPrice * item.quantity).toFixed(2)} €
                         </div>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                         <button 
                           type="button" 
                           className="quantity-btn" 
@@ -371,7 +377,7 @@ export default function Kasse({ token }) {
                         >
                           −
                         </button>
-                        <span style={{ fontWeight: 'bold', minWidth: '16px', textAlign: 'center' }}>{item.quantity}</span>
+                        <span style={{ fontWeight: 'bold', fontSize: '0.85rem', minWidth: '16px', textAlign: 'center' }}>{item.quantity}</span>
                         <button 
                           type="button" 
                           className="quantity-btn" 
@@ -382,14 +388,15 @@ export default function Kasse({ token }) {
                         </button>
                       </div>
                     </div>
+                    
                     {item.toppings.length > 0 && (
                       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.25rem' }}>
                         {item.toppings.map(t => (
                           <span 
                             key={t} 
                             style={{ 
-                              fontSize: '0.7rem', 
-                              padding: '0.1rem 0.35rem', 
+                              fontSize: '0.65rem', 
+                              padding: '0.08rem 0.3rem', 
                               borderRadius: '4px', 
                               backgroundColor: 'rgba(245, 158, 11, 0.08)', 
                               border: '1px solid rgba(245, 158, 11, 0.15)', 
@@ -407,18 +414,16 @@ export default function Kasse({ token }) {
             )}
           </div>
 
-          <form onSubmit={handleCheckout} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          <form onSubmit={handleCheckout} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             {/* Product Limit Warning */}
             {nonWaterCount > 10 && (
-              <div className="alert alert-error" style={{ fontSize: '0.8rem', padding: '0.75rem', marginBottom: '0.5rem', lineHeight: '1.4' }}>
-                ⚠️ Maximal 10 Produkte pro Bestellung erlaubt (Wasser ist unbegrenzt). 
-                Aktuell: <strong>{nonWaterCount} Produkte</strong>. 
-                Bitte erstelle eine neue Bestellung.
+              <div className="alert alert-error" style={{ fontSize: '0.75rem', padding: '0.5rem', marginBottom: '0', lineHeight: '1.3' }}>
+                ⚠️ Max 10 Produkte erlaubt.
               </div>
             )}
 
             <div className="form-group">
-              <label>Kundenname (Schülername) *</label>
+              <label>Kundenname *</label>
               <input
                 type="text"
                 className="form-input"
@@ -440,24 +445,31 @@ export default function Kasse({ token }) {
               />
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem', fontSize: '1.15rem' }}>
-              <strong>Gesamtsumme:</strong>
-              <strong style={{ color: 'var(--accent)', fontSize: '1.35rem' }}>{getCartTotal().toFixed(2)} €</strong>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '0.5rem', fontSize: '1.05rem' }}>
+              <strong>Summe:</strong>
+              <strong style={{ color: 'var(--accent)', fontSize: '1.2rem' }}>{getCartTotal().toFixed(2)} €</strong>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-              <button 
-                type="button" 
-                className="btn btn-secondary" 
-                onClick={clearCart}
-                disabled={cart.length === 0}
-              >
-                Leeren
-              </button>
+            <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+              {cart.length > 0 && (
+                <button 
+                  type="button" 
+                  className="btn-trash-icon" 
+                  title="Warenkorb leeren"
+                  onClick={clearCart}
+                  style={{ padding: '0.75rem' }}
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="3 6 5 6 21 6"/>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                  </svg>
+                </button>
+              )}
               <button 
                 type="submit" 
                 className="btn btn-primary" 
                 disabled={submitting || cart.length === 0 || nonWaterCount > 10}
+                style={{ flex: 1, padding: '0.75rem', fontSize: '0.95rem', fontWeight: 800 }}
               >
                 {submitting ? 'Buchen...' : 'Buchen'}
               </button>
@@ -468,16 +480,16 @@ export default function Kasse({ token }) {
 
       {/* Toppings Customization Modal */}
       {customizingProduct && (
-        <div className="cart-drawer-overlay" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-          <div className="login-container" style={{ width: '100%', maxWidth: '460px', margin: '0 1rem', textAlign: 'left', animation: 'bounce-in 0.3s ease-out' }}>
-            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem', marginBottom: '0.5rem', color: 'var(--accent)' }}>
-              ✨ {customizingProduct.name} verfeinern
+        <div className="cart-drawer-overlay" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
+          <div className="login-container" style={{ width: '100%', maxWidth: '440px', margin: '0 1rem', textAlign: 'left', animation: 'bounce-in 0.3s ease-out' }}>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', marginBottom: '0.5rem', color: 'var(--accent)' }}>
+              ✨ Toppings anpassen: {customizingProduct.name}
             </h3>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.5rem' }}>
-              Wähle die Extras aus. Jedes Topping kostet <strong>+ 0.50 €</strong>.
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.85rem', marginBottom: '1.25rem' }}>
+              Wähle Extras. Jedes Extra kostet <strong>+ 0.50 €</strong>.
             </p>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', marginBottom: '2rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
               {(customizingProduct.category === 'Waffeln' 
                 ? ['Puderzucker', 'Zimt-Zucker', 'Nutella'] 
                 : AVAILABLE_TOPPINGS
@@ -490,8 +502,8 @@ export default function Kasse({ token }) {
                       display: 'flex', 
                       alignItems: 'center', 
                       gap: '0.75rem', 
-                      padding: '0.75rem 1rem', 
-                      borderRadius: '10px', 
+                      padding: '0.65rem 0.85rem', 
+                      borderRadius: '8px', 
                       backgroundColor: isSelected ? 'rgba(245, 158, 11, 0.06)' : 'var(--bg-tertiary)',
                       border: `1px solid ${isSelected ? 'var(--accent)' : 'rgba(255,255,255,0.04)'}`,
                       cursor: 'pointer',
@@ -503,13 +515,13 @@ export default function Kasse({ token }) {
                       checked={isSelected}
                       onChange={() => handleToppingToggle(topping)}
                       style={{ 
-                        width: '18px', 
-                        height: '18px', 
+                        width: '16px', 
+                        height: '16px', 
                         accentColor: 'var(--accent)',
                         cursor: 'pointer'
                       }}
                     />
-                    <span style={{ fontWeight: 600, fontSize: '0.95rem', color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
+                    <span style={{ fontWeight: 600, fontSize: '0.9rem', color: isSelected ? 'var(--text-primary)' : 'var(--text-secondary)' }}>
                       {topping} (+ 0.50 €)
                     </span>
                   </label>
@@ -517,19 +529,19 @@ export default function Kasse({ token }) {
               })}
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '1rem', marginBottom: '1.5rem' }}>
-              <span style={{ color: 'var(--text-secondary)' }}>Preis pro Stück:</span>
-              <strong style={{ fontSize: '1.35rem', color: 'var(--accent)', fontFamily: 'var(--font-display)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '0.75rem', marginBottom: '1.25rem' }}>
+              <span style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Preis pro Stück:</span>
+              <strong style={{ fontSize: '1.2rem', color: 'var(--accent)', fontFamily: 'var(--font-display)' }}>
                 {(2.00 + selectedToppings.length * 0.50).toFixed(2)} €
               </strong>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
-              <button className="btn btn-secondary" onClick={() => setCustomizingProduct(null)}>
+              <button className="btn btn-secondary" onClick={() => setCustomizingProduct(null)} style={{ padding: '0.6rem' }}>
                 Abbrechen
               </button>
-              <button className="btn btn-primary" onClick={submitCustomization}>
-                Hinzufügen
+              <button className="btn btn-primary" onClick={submitCustomization} style={{ padding: '0.6rem' }}>
+                Übernehmen
               </button>
             </div>
           </div>
@@ -538,7 +550,7 @@ export default function Kasse({ token }) {
 
       {/* Error Modal */}
       {errorMessage && (
-        <div className="cart-drawer-overlay" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 300 }} onClick={() => setErrorMessage(null)}>
+        <div className="cart-drawer-overlay" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1100 }} onClick={() => setErrorMessage(null)}>
           <div className="login-container" style={{ width: '100%', maxWidth: '420px', margin: '0 1rem', textAlign: 'center', border: '1px solid rgba(239, 68, 68, 0.2)', animation: 'bounce-in 0.3s ease-out' }} onClick={(e) => e.stopPropagation()}>
             <span style={{ fontSize: '3rem', display: 'block', marginBottom: '1rem' }}>⚠️</span>
             <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.3rem', marginBottom: '0.75rem', color: '#ef4444' }}>

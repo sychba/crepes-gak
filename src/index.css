@@ -789,6 +789,9 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: 6px;
   cursor: pointer;
   transition: var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
 }
 
 .terminal-tab-btn:hover {
@@ -821,34 +824,159 @@ h1, h2, h3, h4, h5, h6 {
 /* Kasse Screen (Cash Register) */
 .kasse-layout {
   display: grid;
-  grid-template-columns: 1fr 380px;
-  gap: 2rem;
+  grid-template-columns: 2.2fr 1fr;
+  gap: 1.5rem;
   align-items: start;
 }
 
 .kasse-products {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  gap: 1rem;
+}
+
+.pos-products-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+@media (max-width: 1200px) {
+  .pos-products-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .kasse-layout {
+    grid-template-columns: 1fr;
+  }
+  .pos-products-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.pos-product-card {
+  background-color: var(--bg-secondary);
+  border: 1.5px solid rgba(255, 255, 255, 0.05);
+  border-radius: 10px;
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 100px;
+  cursor: pointer;
+  position: relative;
+  transition: var(--transition-fast);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.pos-product-card:hover {
+  border-color: var(--accent);
+  background-color: rgba(255, 255, 255, 0.02);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.08);
+}
+
+.pos-product-card.active-item {
+  border-color: var(--accent);
+  background-color: rgba(245, 158, 11, 0.03);
+}
+
+.pos-product-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.pos-product-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  line-height: 1.25;
+}
+
+.pos-product-price {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.pos-product-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.pos-product-qty-badge {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  background-color: #10b981;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 800;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  animation: bounce-in 0.2s ease-out;
+}
+
+.pos-customize-btn {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  color: var(--text-secondary);
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  z-index: 10;
+}
+
+.pos-customize-btn:hover {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
 }
 
 .kasse-cart-panel {
   background-color: var(--bg-secondary);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 20px;
-  padding: 1.5rem;
-  position: sticky;
-  top: 6rem;
-  max-height: calc(100vh - 8rem);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  padding: 1.25rem;
   display: flex;
   flex-direction: column;
+  gap: 1.25rem;
+  position: sticky;
+  top: 6.5rem;
+  max-height: calc(100vh - 10rem);
 }
 
 .kasse-cart-title {
-  font-size: 1.25rem;
-  margin-bottom: 1rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  padding-bottom: 0.5rem;
+  font-family: var(--font-display);
+  font-size: 1.2rem;
+  font-weight: 700;
+  border-bottom: 2px solid var(--border-color);
+  padding-bottom: 0.75rem;
+  margin-bottom: 0.25rem;
 }
 
 /* Kitchen Screen (Küche) */
