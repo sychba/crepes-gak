@@ -39,6 +39,7 @@ export default function Kueche({ token }) {
   const prevOrdersRef = useRef([]);
   const isFirstLoadRef = useRef(true);
   const [audioEnabled, setAudioEnabled] = useState(false);
+  const [deleteConfirmOrder, setDeleteConfirmOrder] = useState(null);
 
   // Periodically verify the audio context state
   useEffect(() => {
@@ -193,9 +194,14 @@ export default function Kueche({ token }) {
     }
   };
 
-  const handleDeleteOrder = async (orderId) => {
-    if (!confirm('Möchtest du diese Bestellung wirklich löschen?')) return;
+  const handleDeleteOrder = (orderId) => {
+    setDeleteConfirmOrder(orderId);
+  };
 
+  const confirmDeleteOrder = async () => {
+    if (!deleteConfirmOrder) return;
+    const orderId = deleteConfirmOrder;
+    setDeleteConfirmOrder(null);
     try {
       await deleteOrder({
         password: token,
@@ -604,6 +610,55 @@ export default function Kueche({ token }) {
         </div>
 
       </div>
+
+      {/* Custom, premium confirmation modal for deleting orders */}
+      {deleteConfirmOrder && (
+        <div 
+          className="cart-drawer-overlay" 
+          style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}
+          onClick={() => setDeleteConfirmOrder(null)}
+        >
+          <div 
+            className="login-container" 
+            style={{ 
+              width: '100%', 
+              maxWidth: '440px', 
+              margin: '0 1rem', 
+              textAlign: 'center', 
+              border: '1px solid rgba(239, 68, 68, 0.25)', 
+              animation: 'bounce-in 0.2s ease-out',
+              padding: '2rem',
+              boxShadow: '0 10px 25px rgba(0,0,0,0.5)'
+            }} 
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>🗑️</div>
+            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.5rem', marginBottom: '0.75rem', color: '#ef4444' }}>
+              Bestellung löschen?
+            </h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.95rem', lineHeight: '1.5', marginBottom: '1.75rem' }}>
+              Möchtest du die Bestellung <strong style={{ color: 'var(--text-primary)' }}>{deleteConfirmOrder}</strong> wirklich löschen?
+            </p>
+            <div style={{ display: 'flex', gap: '0.75rem' }}>
+              <button 
+                className="btn btn-secondary" 
+                onClick={() => setDeleteConfirmOrder(null)}
+                style={{ flex: 1, padding: '0.75rem', fontSize: '0.95rem', fontWeight: 600 }}
+              >
+                Abbrechen
+              </button>
+              <button 
+                className="btn btn-primary" 
+                onClick={confirmDeleteOrder}
+                style={{ flex: 1, padding: '0.75rem', fontSize: '0.95rem', fontWeight: 800, backgroundColor: '#ef4444', borderColor: '#ef4444', color: '#fff' }}
+              >
+                Ja, löschen
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
