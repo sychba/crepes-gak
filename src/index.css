@@ -1037,24 +1037,21 @@ h1, h2, h3, h4, h5, h6 {
   gap: 0.5rem;
 }
 
-.kitchen-order-type {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  font-size: 0.7rem;
+.kitchen-order-type-badge {
+  font-size: 0.65rem;
   font-weight: 700;
   text-transform: uppercase;
-  padding: 0.1rem 0.3rem;
+  padding: 0.1rem 0.35rem;
   border-radius: 4px;
 }
 
-.kitchen-order-type.kasse {
-  background-color: rgba(16, 185, 129, 0.1);
+.kitchen-order-type-badge.kasse {
+  background-color: rgba(16, 185, 129, 0.12);
   color: #10b981;
 }
 
-.kitchen-order-type.online {
-  background-color: rgba(59, 130, 246, 0.1);
+.kitchen-order-type-badge.online {
+  background-color: rgba(59, 130, 246, 0.12);
   color: #3b82f6;
 }
 

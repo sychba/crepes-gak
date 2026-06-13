@@ -44,7 +44,7 @@ function App() {
   return (
     <div className="app-container">
       {!isTerminal && (
-        <header className="header">
+        <header className="header" style={{ justifyContent: 'center' }}>
           <a
             href="/"
             onClick={(e) => {
@@ -56,28 +56,6 @@ function App() {
             <span className="logo-icon">🥞</span>
             <span className="logo-text">Crepes GAK</span>
           </a>
-          <nav className="nav-links">
-            <a
-              href="/"
-              onClick={(e) => {
-                e.preventDefault();
-                navigate('/');
-              }}
-              className={`nav-link ${path === '/' ? 'active' : ''}`}
-            >
-              🥞 Bestellen
-            </a>
-            <a
-              href="/terminal"
-              onClick={(e) => {
-                e.preventDefault();
-                navigate('/terminal');
-              }}
-              className="nav-link"
-            >
-              🔑 Staff Terminal
-            </a>
-          </nav>
         </header>
       )}
 

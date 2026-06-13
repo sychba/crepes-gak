@@ -13,6 +13,7 @@ export default defineSchema({
 
   orders: defineTable({
     id: v.string(), // E.g. "C-X39B" (ticket code)
+    deviceId: v.string(), // Device tracking identifier
     customerName: v.string(),
     customerClass: v.string(),
     status: v.string(), // "Neu" | "Zubereitung" | "Fertig" | "Ausgeliefert"
@@ -30,4 +31,10 @@ export default defineSchema({
   })
     .index("by_ticket_code", ["id"])
     .index("by_status", ["status"])
+    .index("by_device", ["deviceId"]),
+
+  blockedDevices: defineTable({
+    deviceId: v.string(),
+    blockedAt: v.number(),
+  }).index("by_device", ["deviceId"])
 });

@@ -177,9 +177,11 @@ export default function Kueche({ token }) {
             const minutes = getMinutesElapsed(order.createdAt);
             return (
               <div key={order.id} className="kitchen-order-card">
-                <span className={`kitchen-order-type ${order.type}`}>{order.type}</span>
                 <div className="kitchen-order-header">
-                  <span className="kitchen-order-id">{order.id}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span className="kitchen-order-id">{order.id}</span>
+                    <span className={`kitchen-order-type-badge ${order.type}`}>{order.type}</span>
+                  </div>
                   <span 
                     className="kitchen-order-time"
                     style={{ 
@@ -231,9 +233,11 @@ export default function Kueche({ token }) {
           </div>
           {ordersPrep.map(order => (
             <div key={order.id} className="kitchen-order-card">
-              <span className={`kitchen-order-type ${order.type}`}>{order.type}</span>
               <div className="kitchen-order-header">
-                <span className="kitchen-order-id">{order.id}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span className="kitchen-order-id">{order.id}</span>
+                  <span className={`kitchen-order-type-badge ${order.type}`}>{order.type}</span>
+                </div>
                 <span className="kitchen-order-time">vor {getMinutesElapsed(order.createdAt)} Min.</span>
               </div>
               <div>
@@ -276,9 +280,11 @@ export default function Kueche({ token }) {
           </div>
           {ordersReady.map(order => (
             <div key={order.id} className="kitchen-order-card" style={{ borderColor: 'rgba(16, 185, 129, 0.3)' }}>
-              <span className={`kitchen-order-type ${order.type}`}>{order.type}</span>
               <div className="kitchen-order-header">
-                <span className="kitchen-order-id" style={{ color: '#10b981' }}>{order.id}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span className="kitchen-order-id" style={{ color: '#10b981' }}>{order.id}</span>
+                  <span className={`kitchen-order-type-badge ${order.type}`}>{order.type}</span>
+                </div>
                 <span className="kitchen-order-time">bereit seit {getMinutesElapsed(order.updatedAt)} Min.</span>
               </div>
               <div>
@@ -321,9 +327,11 @@ export default function Kueche({ token }) {
           </div>
           {ordersDone.slice(0, 15).map(order => ( // Show last 15 delivered orders to avoid clutter
             <div key={order.id} className="kitchen-order-card" style={{ opacity: 0.6 }}>
-              <span className={`kitchen-order-type ${order.type}`}>{order.type}</span>
               <div className="kitchen-order-header">
-                <span className="kitchen-order-id">{order.id}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span className="kitchen-order-id">{order.id}</span>
+                  <span className={`kitchen-order-type-badge ${order.type}`}>{order.type}</span>
+                </div>
                 <span className="kitchen-order-time">fertig</span>
               </div>
               <div>

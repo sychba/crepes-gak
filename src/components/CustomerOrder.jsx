@@ -12,6 +12,43 @@ export default function CustomerOrder({ navigate }) {
   const [customerName, setCustomerName] = useState('');
   const [customerClass, setCustomerClass] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [deviceId, setDeviceId] = useState('');
+  const [cooldown, setCooldown] = useState(0); // minutes remaining
+
+  // 1. Get or generate device ID & check cooldown
+  useEffect(() => {
+    let devId = localStorage.getItem('crepes_device_id');
+    if (!devId) {
+      devId = 'dev_' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+      localStorage.setItem('crepes_device_id', devId);
+    }
+    setDeviceId(devId);
+
+    const checkCooldown = () => {
+      const storedTimestamps = JSON.parse(localStorage.getItem('crepes_order_timestamps') || '[]');
+      const oneHourAgo = Date.now() - 60 * 60 * 1000;
+      const recentTimestamps = storedTimestamps.filter(t => t > oneHourAgo);
+      
+      localStorage.setItem('crepes_order_timestamps', JSON.stringify(recentTimestamps));
+
+      if (recentTimestamps.length >= 2) {
+        const oldestOrder = recentTimestamps[0];
+        const nextAllowed = oldestOrder + 60 * 60 * 1000;
+        const remainingMs = nextAllowed - Date.now();
+        if (remainingMs > 0) {
+          setCooldown(Math.ceil(remainingMs / 60000));
+        } else {
+          setCooldown(0);
+        }
+      } else {
+        setCooldown(0);
+      }
+    };
+
+    checkCooldown();
+    const interval = setInterval(checkCooldown, 20000); // refresh every 20 seconds
+    return () => clearInterval(interval);
+  }, []);
 
   // Auto-seed products if they are empty
   useEffect(() => {
@@ -22,6 +59,10 @@ export default function CustomerOrder({ navigate }) {
   }, [products, seedProducts]);
 
   const updateQuantity = (productId, delta) => {
+    if (cooldown > 0 && delta > 0) {
+      alert(`Bestell-Limit erreicht. Du kannst in ${cooldown} Minuten wieder bestellen.`);
+      return;
+    }
     setCart((prevCart) => {
       const currentQty = prevCart[productId] || 0;
       const newQty = Math.max(0, currentQty + delta);
@@ -69,11 +110,17 @@ export default function CustomerOrder({ navigate }) {
 
     try {
       const order = await createOrder({
+        deviceId,
         customerName: customerName.trim(),
         customerClass: customerClass.trim(),
         type: 'online',
         items,
       });
+
+      // Update local storage order timestamps on success
+      const storedTimestamps = JSON.parse(localStorage.getItem('crepes_order_timestamps') || '[]');
+      storedTimestamps.push(Date.now());
+      localStorage.setItem('crepes_order_timestamps', JSON.stringify(storedTimestamps));
 
       setCart({});
       setCustomerName('');
@@ -83,7 +130,7 @@ export default function CustomerOrder({ navigate }) {
       navigate(`/order/${order.id}`);
     } catch (err) {
       console.error(err);
-      alert('Fehler beim Aufgeben der Bestellung. Bitte versuche es erneut.');
+      alert(err.message || 'Fehler beim Aufgeben der Bestellung. Bitte versuche es erneut.');
       setSubmitting(false);
     }
   };
@@ -107,9 +154,20 @@ export default function CustomerOrder({ navigate }) {
   }, {});
 
   const cartCount = getCartCount();
+  const nonWaterCount = Object.entries(cart).reduce((sum, [id, qty]) => {
+    return id !== 'drink-wasser' ? sum + qty : sum;
+  }, 0);
 
   return (
     <div className="main-content">
+      {/* Cooldown Alert Banner */}
+      {cooldown > 0 && (
+        <div className="alert alert-error" style={{ position: 'sticky', top: '5.5rem', zIndex: 80, display: 'flex', flexDirection: 'column', gap: '0.25rem', textAlign: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.3)', marginBottom: '2rem' }}>
+          <strong>Bestellsperre aktiv (Anti-Spam)</strong>
+          <span>Du hast bereits 2 Bestellungen aufgegeben. Du kannst in <strong>{cooldown} Minuten</strong> wieder bestellen.</span>
+        </div>
+      )}
+
       {/* Welcome Banner */}
       <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
         <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem', background: 'linear-gradient(135deg, #fff 40%, var(--accent) 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
@@ -206,6 +264,15 @@ export default function CustomerOrder({ navigate }) {
             </div>
 
             <form onSubmit={handleCheckout} className="cart-checkout-form">
+              {/* Product Limit Warning */}
+              {nonWaterCount > 10 && (
+                <div className="alert alert-error" style={{ fontSize: '0.8rem', padding: '0.75rem', marginBottom: '0.5rem', lineHeight: '1.4' }}>
+                  ⚠️ Maximal 10 Produkte pro Bestellung erlaubt (Wasser ist unbegrenzt). 
+                  Aktuell: <strong>{nonWaterCount} Produkte</strong>. 
+                  Bitte erstelle eine neue Bestellung oder bestelle von einem anderen Gerät.
+                </div>
+              )}
+
               <div className="form-group">
                 <label htmlFor="cust-name">Dein Name *</label>
                 <input
@@ -239,7 +306,7 @@ export default function CustomerOrder({ navigate }) {
               <button
                 type="submit"
                 className="btn btn-primary"
-                disabled={submitting}
+                disabled={submitting || nonWaterCount > 10 || cooldown > 0}
                 style={{ width: '100%', padding: '1rem', marginTop: '0.5rem' }}
               >
                 {submitting ? 'Bestellung wird gesendet...' : 'Kostenpflichtig bestellen'}

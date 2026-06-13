@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import Kasse from './Kasse';
 import Kueche from './Kueche';
+import GerateManager from './GerateManager';
 
 export default function Terminal({ navigate }) {
   const [token, setToken] = useState(localStorage.getItem('crepes_staff_token') || null);
@@ -99,6 +100,12 @@ export default function Terminal({ navigate }) {
           >
             💰 Kasse
           </button>
+          <button
+            className={`terminal-tab-btn ${activeTab === 'gerate' ? 'active' : ''}`}
+            onClick={() => setActiveTab('gerate')}
+          >
+            📱 Geräte
+          </button>
         </div>
 
         <div>
@@ -110,11 +117,9 @@ export default function Terminal({ navigate }) {
 
       {/* Main Terminal View Content */}
       <main className="main-content" style={{ padding: '1.5rem' }}>
-        {activeTab === 'kueche' ? (
-          <Kueche token={token} />
-        ) : (
-          <Kasse token={token} />
-        )}
+        {activeTab === 'kueche' && <Kueche token={token} />}
+        {activeTab === 'kasse' && <Kasse token={token} />}
+        {activeTab === 'gerate' && <GerateManager token={token} />}
       </main>
     </div>
   );

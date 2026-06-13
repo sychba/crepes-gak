@@ -63,6 +63,7 @@ export default function Kasse({ token }) {
 
     try {
       const order = await createOrder({
+        deviceId: 'kasse_terminal',
         customerName: customerName.trim() + ' (Vor Ort)',
         customerClass: customerClass.trim(),
         type: 'kasse',
