@@ -117,7 +117,13 @@ export default function Kueche({ token }) {
     return Object.entries(counts);
   };
 
-  if (orders === undefined) return <div>Lade Küchenboard...</div>;
+  if (orders === undefined) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh', flexDirection: 'column', gap: '1rem' }}>
+        <div className="status-badge neu" style={{ animation: 'pulse 1.5s infinite' }}>Lade Küchenboard...</div>
+      </div>
+    );
+  }
 
   // Filter columns
   const ordersNeu = orders.filter(o => o.status === 'Neu');

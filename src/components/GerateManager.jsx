@@ -25,7 +25,13 @@ export default function GerateManager({ token }) {
     }
   };
 
-  if (devices === undefined) return <div>Lade Gerätedaten...</div>;
+  if (devices === undefined) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '40vh', flexDirection: 'column', gap: '1rem' }}>
+        <div className="status-badge neu" style={{ animation: 'pulse 1.5s infinite' }}>Lade Gerätedaten...</div>
+      </div>
+    );
+  }
 
   return (
     <div>

@@ -165,8 +165,13 @@ export default function Kasse({ token }) {
     }
   };
 
-  // Loading state
-  if (products === undefined) return <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-secondary)' }}>Lade Produkte...</div>;
+  if (products === undefined) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '40vh', flexDirection: 'column', gap: '1rem' }}>
+        <div className="status-badge neu" style={{ animation: 'pulse 1.5s infinite' }}>Lade Produkte...</div>
+      </div>
+    );
+  }
 
   // Filter categories. Exclude products with old IDs if any remain during transition
   const validProducts = products.filter(p => p.id !== 'crepe-nutella');
