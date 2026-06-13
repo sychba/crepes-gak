@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Databases
+crepes.db
+db.json
+db.json.tmp
+

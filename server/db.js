@@ -1,145 +1,108 @@
-import { DatabaseSync } from 'node:sqlite';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const dbPath = path.resolve(__dirname, '../crepes.db');
-const db = new DatabaseSync(dbPath);
+const dbPath = path.resolve(__dirname, '../db.json');
 
-// Initialize DB schema
-export function initDb() {
-  // Create tables
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS products (
-      id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
-      price REAL NOT NULL,
-      category TEXT NOT NULL,
-      description TEXT,
-      available INTEGER DEFAULT 1
-    );
-  `);
+const defaultProducts = [
+  { id: 'crepe-nutella', name: 'Crepe Nutella', price: 3.00, category: 'Crepes Süß', description: 'Mit leckerem original Nutella-Aufstrich.', available: 1 },
+  { id: 'crepe-zimt-zucker', name: 'Crepe Zimt & Zucker', price: 2.50, category: 'Crepes Süß', description: 'Der Klassiker mit Zimt und feinem Zucker.', available: 1 },
+  { id: 'crepe-apfelmus', name: 'Crepe Apfelmus', price: 3.00, category: 'Crepes Süß', description: 'Mit fruchtigem Apfelmus.', available: 1 },
+  { id: 'crepe-banane-nutella', name: 'Crepe Banane & Nutella', price: 3.50, category: 'Crepes Süß', description: 'Süße Bananenscheiben mit viel Nutella.', available: 1 },
+  { id: 'crepe-kaese', name: 'Crepe Käse', price: 3.00, category: 'Crepes Herzhaft', description: 'Geschmolzener geriebener Käse.', available: 1 },
+  { id: 'crepe-schinken-kaese', name: 'Crepe Schinken & Käse', price: 3.50, category: 'Crepes Herzhaft', description: 'Saftiger Vorderschinken mit geschmolzenem Käse.', available: 1 },
+  { id: 'drink-fritz-kola', name: 'Fritz-Kola 0.33l', price: 2.00, category: 'Getränke', description: 'Eiskalte Fritz-Kola für den Koffeinkick.', available: 1 },
+  { id: 'drink-wasser', name: 'Wasser 0.5l', price: 1.50, category: 'Getränke', description: 'Spritziges oder stilles Mineralwasser.', available: 1 }
+];
 
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS orders (
-      id TEXT PRIMARY KEY,
-      customer_name TEXT NOT NULL,
-      customer_class TEXT,
-      status TEXT NOT NULL,
-      type TEXT NOT NULL, -- 'online' | 'kasse'
-      created_at INTEGER NOT NULL,
-      updated_at INTEGER NOT NULL
-    );
-  `);
-
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS order_items (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      order_id TEXT NOT NULL,
-      product_id TEXT NOT NULL,
-      quantity INTEGER NOT NULL,
-      price_at_order REAL NOT NULL,
-      FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
-    );
-  `);
-
-  // Seed default products if empty
-  const countStmt = db.prepare('SELECT COUNT(*) as count FROM products');
-  const result = countStmt.get();
-  
-  if (result.count === 0) {
-    console.log('Seeding default products into SQLite database...');
-    const insertStmt = db.prepare(`
-      INSERT INTO products (id, name, price, category, description, available)
-      VALUES (?, ?, ?, ?, ?, 1)
-    `);
-
-    const defaultProducts = [
-      { id: 'crepe-nutella', name: 'Crepe Nutella', price: 3.00, category: 'Crepes Süß', description: 'Mit leckerem original Nutella-Aufstrich.' },
-      { id: 'crepe-zimt-zucker', name: 'Crepe Zimt & Zucker', price: 2.50, category: 'Crepes Süß', description: 'Der Klassiker mit Zimt und feinem Zucker.' },
-      { id: 'crepe-apfelmus', name: 'Crepe Apfelmus', price: 3.00, category: 'Crepes Süß', description: 'Mit fruchtigem Apfelmus.' },
-      { id: 'crepe-banane-nutella', name: 'Crepe Banane & Nutella', price: 3.50, category: 'Crepes Süß', description: 'Süße Bananenscheiben mit viel Nutella.' },
-      { id: 'crepe-kaese', name: 'Crepe Käse', price: 3.00, category: 'Crepes Herzhaft', description: 'Geschmolzener geriebener Käse.' },
-      { id: 'crepe-schinken-kaese', name: 'Crepe Schinken & Käse', price: 3.50, category: 'Crepes Herzhaft', description: 'Saftiger Vorderschinken mit geschmolzenem Käse.' },
-      { id: 'drink-fritz-kola', name: 'Fritz-Kola 0.33l', price: 2.00, category: 'Getränke', description: 'Eiskalte Fritz-Kola für den Koffeinkick.' },
-      { id: 'drink-wasser', name: 'Wasser 0.5l', price: 1.50, category: 'Getränke', description: 'Spritziges oder stilles Mineralwasser.' }
-    ];
-
-    for (const prod of defaultProducts) {
-      insertStmt.run(prod.id, prod.name, prod.price, prod.category, prod.description);
+// Helper: Read from JSON file database
+function readDb() {
+  try {
+    if (!fs.existsSync(dbPath)) {
+      const initialData = { products: defaultProducts, orders: [] };
+      fs.writeFileSync(dbPath, JSON.stringify(initialData, null, 2), 'utf-8');
+      return initialData;
     }
+    const data = fs.readFileSync(dbPath, 'utf-8');
+    return JSON.parse(data);
+  } catch (err) {
+    console.error('Error reading JSON database:', err);
+    return { products: defaultProducts, orders: [] };
   }
+}
+
+// Helper: Write to JSON file database (atomic write)
+function writeDb(data) {
+  try {
+    const tempPath = dbPath + '.tmp';
+    fs.writeFileSync(tempPath, JSON.stringify(data, null, 2), 'utf-8');
+    fs.renameSync(tempPath, dbPath);
+  } catch (err) {
+    console.error('Error writing to JSON database:', err);
+  }
+}
+
+// Initialize DB schema (No-op in JSON database since readDb handles creation)
+export function initDb() {
+  readDb();
+  console.log('JSON database initialized successfully at:', dbPath);
 }
 
 // Product helpers
 export function getAllProducts() {
-  const stmt = db.prepare('SELECT * FROM products ORDER BY category, name');
-  return stmt.all();
+  const dbData = readDb();
+  return dbData.products || [];
 }
 
 // Order helpers
 export function getOrders() {
-  // We need to fetch orders and their items.
-  // Neu status orders should have oldest first (ASC).
-  // Others can have newest first or default order.
-  // Let's return all active orders sorted by:
+  const dbData = readDb();
+  const orders = dbData.orders || [];
+
+  // Sort orders:
   // 1. Status priority (Neu -> Zubereitung -> Fertig -> Ausgeliefert)
   // 2. Within Neu: oldest first (created_at ASC)
   // 3. Within others: newest first (created_at DESC)
-  const ordersStmt = db.prepare(`
-    SELECT * FROM orders 
-    ORDER BY 
-      CASE status 
-        WHEN 'Neu' THEN 1
-        WHEN 'Zubereitung' THEN 2
-        WHEN 'Fertig' THEN 3
-        WHEN 'Ausgeliefert' THEN 4
-        ELSE 5
-      END ASC,
-      CASE status
-        WHEN 'Neu' THEN created_at -- oldest first
-        ELSE -created_at -- newest first (negative timestamp acts as descending sort)
-      END ASC
-  `);
-  
-  const orders = ordersStmt.all();
+  return orders.sort((a, b) => {
+    const statusPriority = {
+      'Neu': 1,
+      'Zubereitung': 2,
+      'Fertig': 3,
+      'Ausgeliefert': 4
+    };
 
-  // Load items for each order
-  const itemsStmt = db.prepare(`
-    SELECT oi.*, p.name as product_name 
-    FROM order_items oi
-    JOIN products p ON oi.product_id = p.id
-    WHERE oi.order_id = ?
-  `);
+    const priorityA = statusPriority[a.status] || 5;
+    const priorityB = statusPriority[b.status] || 5;
 
-  for (const order of orders) {
-    order.items = itemsStmt.all(order.id);
-  }
+    if (priorityA !== priorityB) {
+      return priorityA - priorityB;
+    }
 
-  return orders;
+    if (a.status === 'Neu') {
+      return a.created_at - b.created_at; // oldest first
+    } else {
+      return b.created_at - a.created_at; // newest first
+    }
+  });
 }
 
 export function getOrderById(id) {
-  const orderStmt = db.prepare('SELECT * FROM orders WHERE id = ?');
-  const order = orderStmt.get(id);
-  if (!order) return null;
-
-  const itemsStmt = db.prepare(`
-    SELECT oi.*, p.name as product_name 
-    FROM order_items oi
-    JOIN products p ON oi.product_id = p.id
-    WHERE oi.order_id = ?
-  `);
-  order.items = itemsStmt.all(id);
-  return order;
+  const dbData = readDb();
+  const orders = dbData.orders || [];
+  return orders.find(order => order.id === id) || null;
 }
 
 export function createOrder({ customerName, customerClass, type, items }) {
+  const dbData = readDb();
+  const orders = dbData.orders || [];
+  const products = dbData.products || [];
+
   // Generate short alphanumeric code (e.g. C-8Y9Z)
   const generateCode = () => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Avoid ambiguous chars like 1, 0, I, O
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Avoid ambiguous chars
     let code = '';
     for (let i = 0; i < 4; i++) {
       code += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -149,48 +112,67 @@ export function createOrder({ customerName, customerClass, type, items }) {
 
   let id = generateCode();
   // Ensure uniqueness
-  const checkStmt = db.prepare('SELECT 1 FROM orders WHERE id = ?');
-  while (checkStmt.get(id)) {
+  while (orders.some(order => order.id === id)) {
     id = generateCode();
   }
 
   const now = Date.now();
-  const insertOrderStmt = db.prepare(`
-    INSERT INTO orders (id, customer_name, customer_class, status, type, created_at, updated_at)
-    VALUES (?, ?, ?, 'Neu', ?, ?, ?)
-  `);
-  
-  insertOrderStmt.run(id, customerName, customerClass || '', type, now, now);
 
-  const insertItemStmt = db.prepare(`
-    INSERT INTO order_items (order_id, product_id, quantity, price_at_order)
-    VALUES (?, ?, ?, ?)
-  `);
+  // Map input items to database items with product names and prices at order time
+  const orderItems = items.map((item, index) => {
+    const product = products.find(p => p.id === item.product_id);
+    return {
+      id: now + index, // unique numeric ID for the order item
+      order_id: id,
+      product_id: item.product_id,
+      quantity: item.quantity,
+      price_at_order: product ? product.price : 0.00,
+      product_name: product ? product.name : 'Unbekanntes Produkt'
+    };
+  });
 
-  const prodPriceStmt = db.prepare('SELECT price FROM products WHERE id = ?');
+  const newOrder = {
+    id,
+    customer_name: customerName,
+    customer_class: customerClass || '',
+    status: 'Neu',
+    type,
+    created_at: now,
+    updated_at: now,
+    items: orderItems
+  };
 
-  for (const item of items) {
-    const prod = prodPriceStmt.get(item.product_id);
-    const price = prod ? prod.price : 0.00;
-    insertItemStmt.run(id, item.product_id, item.quantity, price);
-  }
+  orders.push(newOrder);
+  dbData.orders = orders;
+  writeDb(dbData);
 
-  return getOrderById(id);
+  return newOrder;
 }
 
 export function updateOrderStatus(id, status) {
-  const now = Date.now();
-  const stmt = db.prepare(`
-    UPDATE orders 
-    SET status = ?, updated_at = ?
-    WHERE id = ?
-  `);
-  stmt.run(status, now, id);
-  return getOrderById(id);
+  const dbData = readDb();
+  const orders = dbData.orders || [];
+  const orderIndex = orders.findIndex(order => order.id === id);
+
+  if (orderIndex === -1) return null;
+
+  orders[orderIndex].status = status;
+  orders[orderIndex].updated_at = Date.now();
+
+  dbData.orders = orders;
+  writeDb(dbData);
+
+  return orders[orderIndex];
 }
 
 export function deleteOrder(id) {
-  const stmt = db.prepare('DELETE FROM orders WHERE id = ?');
-  stmt.run(id);
+  const dbData = readDb();
+  const orders = dbData.orders || [];
+  const filteredOrders = orders.filter(order => order.id !== id);
+
+  if (orders.length === filteredOrders.length) return false;
+
+  dbData.orders = filteredOrders;
+  writeDb(dbData);
   return true;
 }
