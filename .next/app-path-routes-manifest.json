@@ -1,13 +1,13 @@
 {
-  "/api/passes/push/route": "/api/passes/push",
-  "/api/passes/v1/log/route": "/api/passes/v1/log",
   "/api/passes/generate/route": "/api/passes/generate",
+  "/api/passes/v1/log/route": "/api/passes/v1/log",
+  "/api/passes/push/route": "/api/passes/push",
   "/_not-found/page": "/_not-found",
-  "/api/passes/v1/passes/[passTypeIdentifier]/[serialNumber]/route": "/api/passes/v1/passes/[passTypeIdentifier]/[serialNumber]",
   "/api/passes/v1/devices/[deviceLibraryIdentifier]/registrations/[passTypeIdentifier]/[serialNumber]/route": "/api/passes/v1/devices/[deviceLibraryIdentifier]/registrations/[passTypeIdentifier]/[serialNumber]",
+  "/api/passes/v1/passes/[passTypeIdentifier]/[serialNumber]/route": "/api/passes/v1/passes/[passTypeIdentifier]/[serialNumber]",
   "/api/passes/v1/devices/[deviceLibraryIdentifier]/registrations/[passTypeIdentifier]/route": "/api/passes/v1/devices/[deviceLibraryIdentifier]/registrations/[passTypeIdentifier]",
   "/loyalty/page": "/loyalty",
-  "/order/[id]/page": "/order/[id]",
   "/terminal/page": "/terminal",
+  "/order/[id]/page": "/order/[id]",
   "/page": "/"
 }

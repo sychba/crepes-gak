@@ -90,27 +90,15 @@ export async function generatePass({ cardId, customerName, stamps, authToken, ba
       primaryFields: [
         {
           key: "stamps",
-          label: "Stempel",
-          value: stamps === 10 ? "🎁 Voll!" : `${stamps} von 10`,
+          label: stamps === 10 ? "Gratis Crêpe!" : `${stamps} von 10 Stempel`,
+          value: stamps === 10 ? "🎁🎁🎁🎁🎁" : (stamps > 0 ? "🥞".repeat(stamps) : "Bereit zum Sammeln"),
         },
       ],
       secondaryFields: [
         {
           key: "customerName",
-          label: "Kunde",
-          value: customerName,
-        },
-        {
-          key: "progress",
-          label: "Fortschritt",
-          value: stamps === 10 ? "🎁🎁🎁🎁🎁🎁🎁🎁🎁🎁" : "🥞".repeat(stamps) + "⚪".repeat(10 - stamps),
-        },
-      ],
-      auxiliaryFields: [
-        {
-          key: "status",
-          label: "Status",
-          value: stamps === 10 ? "Gratis Crêpe!" : "Sammeln", // "Sammeln..." ohne Punkte verhindert Abschneiden
+          label: "", // Leerer Label-Text entfernt das Wort "KUNDE" über dem Namen
+          value: customerName, // Da dies das einzige Feld in der Reihe ist, wird es von iOS deutlich größer dargestellt
         },
       ],
       backFields: [
