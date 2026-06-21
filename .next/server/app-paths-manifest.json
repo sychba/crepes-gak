@@ -1,13 +1,13 @@
 {
-  "/api/passes/generate/route": "app/api/passes/generate/route.js",
-  "/api/passes/v1/log/route": "app/api/passes/v1/log/route.js",
-  "/api/passes/push/route": "app/api/passes/push/route.js",
-  "/_not-found/page": "app/_not-found/page.js",
   "/api/passes/v1/devices/[deviceLibraryIdentifier]/registrations/[passTypeIdentifier]/[serialNumber]/route": "app/api/passes/v1/devices/[deviceLibraryIdentifier]/registrations/[passTypeIdentifier]/[serialNumber]/route.js",
+  "/api/passes/push/route": "app/api/passes/push/route.js",
+  "/api/passes/generate/route": "app/api/passes/generate/route.js",
+  "/_not-found/page": "app/_not-found/page.js",
   "/api/passes/v1/passes/[passTypeIdentifier]/[serialNumber]/route": "app/api/passes/v1/passes/[passTypeIdentifier]/[serialNumber]/route.js",
   "/api/passes/v1/devices/[deviceLibraryIdentifier]/registrations/[passTypeIdentifier]/route": "app/api/passes/v1/devices/[deviceLibraryIdentifier]/registrations/[passTypeIdentifier]/route.js",
+  "/api/passes/v1/log/route": "app/api/passes/v1/log/route.js",
   "/loyalty/page": "app/loyalty/page.js",
-  "/terminal/page": "app/terminal/page.js",
   "/order/[id]/page": "app/order/[id]/page.js",
-  "/page": "app/page.js"
+  "/page": "app/page.js",
+  "/terminal/page": "app/terminal/page.js"
 }

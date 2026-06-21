@@ -90,8 +90,8 @@ export async function generatePass({ cardId, customerName, stamps, authToken, ba
       primaryFields: [
         {
           key: "stamps",
-          label: stamps === 10 ? "Gratis Crêpe!" : `${stamps} von 10 Stempel`,
-          value: stamps === 10 ? "🎁🎁🎁🎁🎁" : (stamps > 0 ? "🥞".repeat(stamps) : "Bereit zum Sammeln"),
+          label: "Stempel",
+          value: stamps === 10 ? "Gratis Crêpe! 🎁" : `${stamps} von 10`,
         },
       ],
       secondaryFields: [
