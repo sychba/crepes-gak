@@ -32,6 +32,8 @@ export default function Stationen({ token }) {
   const updateItemStatus = useMutation(api.orders.updateOrderItemStatus);
   const claimOrderItem = useMutation(api.orders.claimOrderItem);
 
+  const [claimError, setClaimError] = useState(null);
+  const [showDebug, setShowDebug] = useState(false);
   const prevTasksCountRef = useRef(0);
   const [audioEnabled, setAudioEnabled] = useState(false);
   const isClaimingRef = useRef(false);
@@ -225,6 +227,7 @@ export default function Stationen({ token }) {
     // If we already have an active task, we don't claim another one
     if (currentTask) {
       isClaimingRef.current = false;
+      setClaimError(null);
       return;
     }
 
@@ -239,8 +242,12 @@ export default function Stationen({ token }) {
         itemIndex: oldestUnassigned.itemIndex,
         deviceId: deviceId
       })
+      .then(() => {
+        setClaimError(null);
+      })
       .catch(err => {
         console.warn("Could not claim task:", err);
+        setClaimError(err.message || String(err));
       })
       .finally(() => {
         isClaimingRef.current = false;
@@ -438,6 +445,15 @@ export default function Stationen({ token }) {
         </button>
       </div>
 
+      {claimError && (
+        <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', borderRadius: '12px', padding: '0.85rem 1.25rem', marginBottom: '1.5rem', color: '#ef4444', fontSize: '0.9rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>⚠️ <strong>Fehler beim automatischen Reservieren:</strong> {claimError}</span>
+          <button className="btn btn-secondary" onClick={() => setClaimError(null)} style={{ fontSize: '0.75rem', padding: '0.2rem 0.5rem' }}>
+            Ausblenden
+          </button>
+        </div>
+      )}
+
       {/* 2. Main Active Task Card */}
       {currentTask ? (
         <div 
@@ -606,7 +622,7 @@ export default function Stationen({ token }) {
                       Kunde: {task.customerName} {task.customerClass ? `| Ort: ${task.customerClass}` : ''}
                     </div>
                   </div>
-                  <div style={{ textAlign: 'right' }}>
+                  <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.2rem' }}>
                     <span style={{ fontWeight: 800, color: 'var(--text-muted)', fontSize: '0.95rem' }}>
                       #{task.orderNumber || task.orderId.replace('C-', '')}
                     </span>
@@ -617,6 +633,24 @@ export default function Stationen({ token }) {
                     }}>
                       {isAssignedToOther ? '🔥 Backt an anderem Eisen' : '⏳ Wartet'}
                     </div>
+                    {isAssignedToOther && (
+                      <button 
+                        className="btn btn-secondary" 
+                        onClick={() => handleUpdateItemStatus(task, 'Neu')}
+                        style={{ 
+                          fontSize: '0.7rem', 
+                          padding: '0.2rem 0.5rem', 
+                          marginTop: '0.2rem', 
+                          borderColor: 'var(--accent)', 
+                          color: 'var(--accent)',
+                          background: 'transparent',
+                          cursor: 'pointer',
+                          borderRadius: '4px'
+                        }}
+                      >
+                        Übernehmen
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -629,6 +663,29 @@ export default function Stationen({ token }) {
           </div>
         </div>
       )}
+      {/* Debug Panel */}
+      <div style={{ marginTop: '3rem', borderTop: '1px solid var(--border-color)', paddingTop: '1.5rem', paddingBottom: '1.5rem' }}>
+        <button 
+          className="btn btn-secondary" 
+          onClick={() => setShowDebug(!showDebug)}
+          style={{ fontSize: '0.8rem', padding: '0.3rem 0.6rem' }}
+        >
+          {showDebug ? '🛠️ Debug ausblenden' : '🛠️ Debug einblenden'}
+        </button>
+        {showDebug && (
+          <div className="card" style={{ marginTop: '1rem', padding: '1rem', background: '#111', fontSize: '0.8rem', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+            <div><strong>Device ID:</strong> <code>{deviceId}</code></div>
+            <div><strong>Selected Station:</strong> <code>{selectedStation}</code></div>
+            <div><strong>Total Orders in DB:</strong> {orders ? orders.length : 'loading...'}</div>
+            <div><strong>Total Station Tasks (Incomplete):</strong> {allTasks.length}</div>
+            <div><strong>Assigned to Me:</strong> {currentTask ? `${currentTask.productName} (#${currentTask.orderNumber})` : 'none'}</div>
+            <div><strong>Unassigned Tasks:</strong> {unassignedTasks.length}</div>
+            <div><strong>Upcoming Tasks:</strong> {upcomingTasks.length}</div>
+            <div><strong>Claiming Active:</strong> {isClaimingRef.current ? 'yes' : 'no'}</div>
+            {claimError && <div style={{ color: '#ef4444' }}><strong>Claim Error:</strong> {claimError}</div>}
+          </div>
+        )}
+      </div>
 
     </div>
   );
