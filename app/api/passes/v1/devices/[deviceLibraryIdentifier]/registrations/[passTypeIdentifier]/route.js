@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "@/convex/_generated/api";
 
-const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL || "");
+const convex = new ConvexHttpClient(process.env.NEXT_PUBLIC_CONVEX_URL || "https://knowing-gazelle-93.convex.cloud");
 
 // GET: Apple fragt nach den Seriennummern der geänderten Pässe seit dem Zeitstempel
 export async function GET(request, { params }) {
