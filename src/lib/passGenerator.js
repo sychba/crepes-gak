@@ -166,20 +166,19 @@ export async function generatePass({ cardId, customerName, stamps, authToken, ba
   const key = process.env.APPLE_PASS_PRIVATE_KEY;
   const wwdr = process.env.APPLE_PASS_WWDR_CERTIFICATE;
 
-  if (cert && key && wwdr) {
-    try {
-      const signatureBuffer = signManifest(manifestBuffer, cert, key, wwdr);
-      zip.file("signature", signatureBuffer);
-    } catch (err) {
-      console.error("Zertifikats-Signierung fehlgeschlagen, erstelle unsignierten Pass:", err);
-    }
-  } else {
-    console.warn(
-      "Zertifikate (APPLE_PASS_CERTIFICATE/PRIVATE_KEY/WWDR_CERTIFICATE) fehlen in .env.local.\n" +
-      "Ein unvollständiger/selbstsignierter Pass wird ohne gültige Signatur generiert."
-    );
-    // iOS wird den Pass verweigern, aber für Downloads und Entwicklung/Simulation ist dies ein sauberer Fallback
-    zip.file("signature", Buffer.from("mock-signature-content"));
+  if (!cert || !key || !wwdr) {
+    const missing = [];
+    if (!cert) missing.push("APPLE_PASS_CERTIFICATE");
+    if (!key) missing.push("APPLE_PASS_PRIVATE_KEY");
+    if (!wwdr) missing.push("APPLE_PASS_WWDR_CERTIFICATE");
+    throw new Error(`Zertifikate fehlen: [${missing.join(", ")}]. Ohne diese Zertifikate verweigert iOS das Hinzufügen der Karte zur Apple Wallet App.`);
+  }
+
+  try {
+    const signatureBuffer = signManifest(manifestBuffer, cert, key, wwdr);
+    zip.file("signature", signatureBuffer);
+  } catch (err) {
+    throw new Error(`Fehler bei der kryptografischen Signierung des Manifests: ${err.message}. Bitte überprüfe das Format deiner PEM-Zertifikate (Zertifikat-Header, Zeilenumbrüche etc.).`);
   }
 
   // 5. ZIP generieren
