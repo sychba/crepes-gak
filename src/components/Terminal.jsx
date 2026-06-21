@@ -3,6 +3,8 @@ import Kasse from './Kasse';
 import Kueche from './Kueche';
 import GerateManager from './GerateManager';
 import LoyaltyScanner from './LoyaltyScanner';
+import Stationen from './Stationen';
+import Dashboard from './Dashboard';
 
 // Premium Inline SVGs for Navigation Tabs
 const CookIcon = () => (
@@ -36,6 +38,26 @@ const GiftIcon = () => (
   </svg>
 );
 
+const StationIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+    <line x1="9" y1="3" x2="9" y2="21"/>
+    <line x1="15" y1="3" x2="15" y2="21"/>
+    <line x1="3" y1="9" x2="21" y2="9"/>
+    <line x1="3" y1="15" x2="21" y2="15"/>
+  </svg>
+);
+
+const OverviewIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="3" width="7" height="9"/>
+    <rect x="14" y="3" width="7" height="5"/>
+    <rect x="14" y="12" width="7" height="9"/>
+    <rect x="3" y="16" width="7" height="5"/>
+  </svg>
+);
+
+
 export default function Terminal({ navigate }) {
   const [token, setToken] = useState(null);
 
@@ -51,7 +73,7 @@ export default function Terminal({ navigate }) {
 
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState(null);
-  const [activeTab, setActiveTab] = useState('kueche'); // 'kasse' or 'kueche'
+  const [activeTab, setActiveTab] = useState('stationen'); // default to stationen view
   const [submitting, setSubmitting] = useState(false);
 
   const handleLogin = (e) => {
@@ -129,6 +151,20 @@ export default function Terminal({ navigate }) {
         {/* Tab switching */}
         <div className="terminal-tabs">
           <button
+            className={`terminal-tab-btn ${activeTab === 'stationen' ? 'active' : ''}`}
+            onClick={() => setActiveTab('stationen')}
+          >
+            <StationIcon />
+            <span>Stationen</span>
+          </button>
+          <button
+            className={`terminal-tab-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
+            onClick={() => setActiveTab('dashboard')}
+          >
+            <OverviewIcon />
+            <span>Übersicht</span>
+          </button>
+          <button
             className={`terminal-tab-btn ${activeTab === 'kueche' ? 'active' : ''}`}
             onClick={() => setActiveTab('kueche')}
           >
@@ -167,6 +203,8 @@ export default function Terminal({ navigate }) {
 
       {/* Main Terminal View Content */}
       <main className="main-content" style={{ padding: '1.5rem' }}>
+        {activeTab === 'stationen' && <Stationen token={token} />}
+        {activeTab === 'dashboard' && <Dashboard token={token} />}
         {activeTab === 'kueche' && <Kueche token={token} />}
         {activeTab === 'kasse' && <Kasse token={token} />}
         {activeTab === 'gerate' && <GerateManager token={token} />}
