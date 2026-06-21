@@ -211,8 +211,11 @@ export default function CustomerOrder({ navigate }) {
         toppings: item.toppings
       }));
 
+      const loyaltyCardId = localStorage.getItem("crepes_loyalty_card_id") || undefined;
+
       const order = await createOrder({
         deviceId,
+        loyaltyCardId,
         customerName: customerName.trim(),
         customerClass: customerClass.trim(),
         type: 'online',
@@ -221,6 +224,15 @@ export default function CustomerOrder({ navigate }) {
       });
       
       clearTimeout(watchdog);
+
+      // Trigger automatic Apple Wallet push update
+      if (order.pushTokens && order.pushTokens.length > 0) {
+        fetch("/api/passes/push", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ pushTokens: order.pushTokens }),
+        }).catch((err) => console.error("Fehler beim Senden des Wallet-Pushs:", err));
+      }
 
       setCart([]);
       setCustomerName('');

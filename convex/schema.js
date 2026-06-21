@@ -14,6 +14,7 @@ export default defineSchema({
   orders: defineTable({
     id: v.string(), // E.g. "C-X39B" (ticket code)
     deviceId: v.optional(v.string()), // Device tracking identifier
+    loyaltyCardId: v.optional(v.string()), // Linked loyalty card ID for automatic stamps
     customerName: v.string(),
     customerClass: v.string(),
     status: v.string(), // "Neu" | "Zubereitung" | "Fertig" | "Ausgeliefert"

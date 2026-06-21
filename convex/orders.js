@@ -51,9 +51,11 @@ export const get = query({
 });
 
 // Create a new order
+// Create a new order
 export const create = mutation({
   args: {
     deviceId: v.string(),
+    loyaltyCardId: v.optional(v.string()), // Optionaler Parameter für automatische Stempelkarte
     customerName: v.string(),
     customerClass: v.string(),
     type: v.string(), // 'online' | 'kasse'
@@ -161,6 +163,7 @@ export const create = mutation({
     const newOrderId = await ctx.db.insert("orders", {
       id: code,
       deviceId: args.deviceId,
+      loyaltyCardId: args.loyaltyCardId,
       customerName: args.customerName,
       customerClass: args.customerClass || "",
       status: "Neu",
@@ -171,7 +174,57 @@ export const create = mutation({
       items: orderItems,
     });
 
-    return await ctx.db.get(newOrderId);
+    // 4. Automatische Stempelvergabe für Crêpes bei Online-Bestellungen
+    let pushTokens = [];
+    let stampsAdded = 0;
+
+    if (args.loyaltyCardId) {
+      // Zähle Crêpes im Warenkorb
+      let crepeCount = 0;
+      for (const item of orderItems) {
+        const product = products.find((p) => p.id === item.productId);
+        if (product && product.category === "Crepes") {
+          crepeCount += item.quantity;
+        }
+      }
+
+      if (crepeCount > 0) {
+        try {
+          // Versuche die Karte zu laden
+          const card = await ctx.db.get(args.loyaltyCardId);
+          if (card) {
+            const totalStamps = card.stamps + crepeCount;
+            // Berechne redemptions (z. B. wenn man mit 9 Punkten startet und 2 kauft)
+            const redemptions = Math.floor(totalStamps / 10);
+            const remainingStamps = totalStamps % 10;
+
+            await ctx.db.patch(card._id, {
+              stamps: remainingStamps,
+              redeemedCount: card.redeemedCount + redemptions,
+              updatedAt: now,
+            });
+
+            stampsAdded = crepeCount;
+
+            // Holt Registrierungen für Apple Wallet Pushes
+            const registrations = await ctx.db
+              .query("passRegistrations")
+              .withIndex("by_serial", (q) => q.eq("serialNumber", card._id))
+              .collect();
+            pushTokens = registrations.map((r) => r.pushToken);
+          }
+        } catch (err) {
+          console.error("Fehler bei der automatischen Stempelvergabe:", err);
+        }
+      }
+    }
+
+    const orderDoc = await ctx.db.get(newOrderId);
+    return {
+      ...orderDoc,
+      pushTokens,
+      stampsAdded,
+    };
   },
 });
 
