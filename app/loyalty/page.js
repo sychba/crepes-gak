@@ -194,6 +194,17 @@ export default function LoyaltyPage() {
           margin: "0 auto 1.5rem",
         }}
       >
+        {/* Pass Header */}
+        <div style={{ padding: "0.8rem 1.2rem 0.5rem", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.4rem" }}>
+            <span style={{ fontSize: "1.1rem" }}>🥞</span>
+            <span style={{ fontWeight: "600", fontSize: "0.85rem", color: "white", letterSpacing: "0.3px" }}>Stempelkarte</span>
+          </div>
+          <div style={{ fontSize: "0.85rem", color: "rgba(255, 255, 255, 0.9)", fontWeight: "600", letterSpacing: "0.2px" }}>
+            {card.customerName}
+          </div>
+        </div>
+
         {/* Pass Middle Section / Strip Image Background */}
         <div
           style={{
@@ -207,7 +218,7 @@ export default function LoyaltyPage() {
         />
 
         {/* Fields Section (Progress) */}
-        <div style={{ padding: "1.2rem 1.2rem 0.4rem" }}>
+        <div style={{ padding: "0.8rem 1.2rem 0.2rem" }}>
           <div style={{ fontSize: "0.58rem", color: "rgba(255, 255, 255, 0.75)", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: "0.2rem" }}>
             Stempel bis zu der nächsten Belohnung:
           </div>
@@ -217,7 +228,7 @@ export default function LoyaltyPage() {
         </div>
 
         {/* Barcode & Scan Info */}
-        <div style={{ padding: "0.5rem 1.2rem 1.5rem", display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <div style={{ padding: "0.2rem 1.2rem 1.2rem", display: "flex", flexDirection: "column", alignItems: "center" }}>
           <div style={{ background: "white", padding: "1rem", borderRadius: "10px", display: "flex", flexDirection: "column", alignItems: "center", boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }}>
             <canvas ref={canvasRef} style={{ width: "160px", height: "160px", display: "block" }}></canvas>
             <span style={{ fontSize: "0.58rem", fontWeight: "600", color: "#666", marginTop: "0.4rem", textTransform: "uppercase", letterSpacing: "0.3px" }}>

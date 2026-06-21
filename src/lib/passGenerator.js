@@ -82,15 +82,22 @@ export async function generatePass({ cardId, customerName, stamps, authToken, ba
     },
     organizationName: "Crêpes GAK",
     description: "Crêpes GAK Stempelkarte",
-    logoText: "",
+    logoText: "Stempelkarte",
     foregroundColor: "rgb(255, 255, 255)",      // Reinweißes Text
     backgroundColor: "rgb(138, 123, 118)",      // Warmes Taupe/Braun
     labelColor: "rgb(255, 255, 255)",           // Weißes Label
     storeCard: {
+      headerFields: [
+        {
+          key: "customerNameHeader",
+          label: "",
+          value: customerName,
+        },
+      ],
       auxiliaryFields: [
         {
           key: "stamps",
-          label: "STEMPEL BIS ZU DER NAECHSTEN BELOHNUNG:",
+          label: "STEMPEL BIS ZU DER NÄCHSTEN BELOHNUNG:",
           value: `${stamps}/10`,
         },
       ],
