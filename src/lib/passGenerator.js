@@ -42,7 +42,8 @@ function signManifest(manifestContent, certificatePem, privateKeyPem, wwdrPem) {
     });
 
     p7.sign();
-    const der = forge.pkcs7.toDer(p7).getBytes();
+    const asn1 = p7.toAsn1();
+    const der = forge.asn1.toDer(asn1).getBytes();
     return Buffer.from(der, "binary");
   } catch (err) {
     console.error("Fehler bei der Signierung des Manifests:", err);
