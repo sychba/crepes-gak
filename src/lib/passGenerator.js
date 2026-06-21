@@ -97,8 +97,8 @@ export async function generatePass({ cardId, customerName, stamps, authToken, ba
       auxiliaryFields: [
         {
           key: "stamps",
-          label: "STEMPEL BIS ZU DER NÄCHSTEN BELOHNUNG:",
-          value: `${stamps}/10`,
+          label: "STEMPEL BIS ZU EINER KOSTENLOSEN BESTELLUNG:",
+          value: `${stamps}/5`,
         },
       ],
       backFields: [

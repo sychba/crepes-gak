@@ -498,7 +498,8 @@ export const updateOrderItemStatus = mutation({
 
     items[args.itemIndex] = {
       ...items[args.itemIndex],
-      status: args.status
+      status: args.status,
+      assignedTo: args.status === "Neu" ? undefined : items[args.itemIndex].assignedTo
     };
 
     // Calculate order's overall status based on item statuses
@@ -531,4 +532,71 @@ export const updateOrderItemStatus = mutation({
     return await ctx.db.get(order._id);
   },
 });
+
+// Claim a single item by an iPad station device
+export const claimOrderItem = mutation({
+  args: {
+    password: v.string(),
+    ticketCode: v.string(),
+    itemIndex: v.number(),
+    deviceId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    if (args.password !== "crepes2026") {
+      throw new Error("Nicht autorisiert. Falsches Passwort.");
+    }
+
+    const order = await ctx.db
+      .query("orders")
+      .withIndex("by_ticket_code", (q) => q.eq("id", args.ticketCode))
+      .unique();
+
+    if (!order) {
+      throw new Error("Bestellung nicht gefunden.");
+    }
+
+    const items = [...order.items];
+    if (args.itemIndex < 0 || args.itemIndex >= items.length) {
+      throw new Error("Ungültiger Index.");
+    }
+
+    const item = items[args.itemIndex];
+    if (item.assignedTo && item.assignedTo !== args.deviceId) {
+      throw new Error("Dieses Produkt wird bereits an einer anderen Station zubereitet.");
+    }
+
+    items[args.itemIndex] = {
+      ...item,
+      status: "Zubereitung",
+      assignedTo: args.deviceId
+    };
+
+    // Recalculate overall order status
+    let newStatus = order.status;
+    const itemStatuses = items.map(i => i.status || "Neu");
+    const allFinished = itemStatuses.every(s => s === "Fertig");
+    const anyPreparingOrFinished = itemStatuses.some(s => s === "Zubereitung" || s === "Fertig");
+
+    if (allFinished) {
+      newStatus = "Fertig";
+    } else if (anyPreparingOrFinished) {
+      newStatus = "Zubereitung";
+    } else {
+      newStatus = "Neu";
+    }
+
+    if (order.status === "Ausgeliefert") {
+      newStatus = "Ausgeliefert";
+    }
+
+    await ctx.db.patch(order._id, {
+      items,
+      status: newStatus,
+      updatedAt: Date.now(),
+    });
+
+    return await ctx.db.get(order._id);
+  },
+});
+
 

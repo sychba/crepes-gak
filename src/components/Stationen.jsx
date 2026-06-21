@@ -25,12 +25,28 @@ const CheckCircleIcon = () => (
 
 export default function Stationen({ token }) {
   const [selectedStation, setSelectedStation] = useState(null); // 'crepes', 'waffeln', 'sandwiches', 'getraenke'
+  const [deviceId, setDeviceId] = useState(null);
+
   const orders = useQuery(api.orders.listAll, { password: token });
   const products = useQuery(api.products.list);
   const updateItemStatus = useMutation(api.orders.updateOrderItemStatus);
+  const claimOrderItem = useMutation(api.orders.claimOrderItem);
 
   const prevTasksCountRef = useRef(0);
   const [audioEnabled, setAudioEnabled] = useState(false);
+  const isClaimingRef = useRef(false);
+
+  // Initialize unique device identifier for this tablet/browser window
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      let id = localStorage.getItem("crepes_station_device_id");
+      if (!id) {
+        id = "station-" + Math.random().toString(36).substring(2, 9);
+        localStorage.setItem("crepes_station_device_id", id);
+      }
+      setDeviceId(id);
+    }
+  }, []);
 
   // Sync sound setting and enable Web Audio context
   useEffect(() => {
@@ -141,7 +157,7 @@ export default function Stationen({ token }) {
     }
   };
 
-  // Extract tasks matching the selected station
+  // Extract ALL tasks matching the selected station
   const getTasks = () => {
     if (!orders || !products || !selectedStation) return [];
 
@@ -171,6 +187,7 @@ export default function Stationen({ token }) {
             productName: item.productName,
             toppings: item.toppings || [],
             status: item.status || "Neu",
+            assignedTo: item.assignedTo,
           });
         }
       });
@@ -180,15 +197,54 @@ export default function Stationen({ token }) {
     return list.sort((a, b) => a.createdAt - b.createdAt);
   };
 
-  const tasks = getTasks();
+  const allTasks = getTasks();
 
-  // Play sound when new tasks are added
+  // Find task assigned to this device, if any
+  const currentTask = allTasks.find(t => t.assignedTo === deviceId);
+
+  // Unassigned tasks (available for claiming)
+  const unassignedTasks = allTasks.filter(t => !t.assignedTo);
+
+  // Upcoming queue preview (all items that are not assigned to me)
+  const upcomingTasks = allTasks.filter(t => t.assignedTo !== deviceId);
+
+  // Play sound when new tasks are added to the station
   useEffect(() => {
-    if (selectedStation && tasks.length > prevTasksCountRef.current) {
+    if (selectedStation && allTasks.length > prevTasksCountRef.current) {
       playNewTaskSound();
     }
-    prevTasksCountRef.current = tasks.length;
-  }, [tasks.length, selectedStation]);
+    prevTasksCountRef.current = allTasks.length;
+  }, [allTasks.length, selectedStation]);
+
+  // AUTO-CLAIMING LOGIC: Claim the oldest unassigned task when idle
+  useEffect(() => {
+    if (!selectedStation || !deviceId || !orders || !products) return;
+
+    // If we already have an active task, we don't claim another one
+    if (currentTask) {
+      isClaimingRef.current = false;
+      return;
+    }
+
+    // If we are idle, claim the oldest unassigned task
+    if (!isClaimingRef.current && unassignedTasks.length > 0) {
+      const oldestUnassigned = unassignedTasks[0];
+      isClaimingRef.current = true;
+
+      claimOrderItem({
+        password: token,
+        ticketCode: oldestUnassigned.orderId,
+        itemIndex: oldestUnassigned.itemIndex,
+        deviceId: deviceId
+      })
+      .catch(err => {
+        console.warn("Could not claim task:", err);
+      })
+      .finally(() => {
+        isClaimingRef.current = false;
+      });
+    }
+  }, [allTasks, deviceId, selectedStation, orders, products, currentTask, unassignedTasks]);
 
   const handleUpdateItemStatus = async (task, newStatus) => {
     try {
@@ -317,9 +373,6 @@ export default function Stationen({ token }) {
     );
   }
 
-  // Active Task for current station
-  const currentTask = tasks[0];
-
   const getStationLabel = () => {
     if (selectedStation === 'crepes') return '🥞 Crêpes-Eisen';
     if (selectedStation === 'waffeln') return '🧇 Waffel-Eisen';
@@ -362,7 +415,7 @@ export default function Stationen({ token }) {
             {getStationLabel()}
           </h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
-            Warteschlange: <strong style={{ color: 'var(--accent)' }}>{tasks.length} Aufgaben</strong> verbleibend
+            Deine ID: <code style={{ color: 'var(--accent)' }}>{deviceId ? deviceId.replace('station-', '') : ''}</code> | Station-Tasks: <strong style={{ color: 'var(--accent)' }}>{unassignedTasks.length} offen</strong> (+ {allTasks.length - unassignedTasks.length} in Arbeit)
           </p>
         </div>
         <button 
@@ -392,10 +445,10 @@ export default function Stationen({ token }) {
           {/* Top Status */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
             <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-              AKTIVE AUFGABE
+              DEINE RESERVIERTE AUFGABE
             </span>
-            <span className={`status-badge ${currentTask.status === 'Zubereitung' ? 'zubereitung' : 'neu'}`} style={{ fontWeight: 'bold' }}>
-              {currentTask.status === 'Zubereitung' ? '🔥 In Zubereitung' : '⏳ Wartet'}
+            <span className="status-badge zubereitung" style={{ fontWeight: 'bold' }}>
+              🔥 In Zubereitung
             </span>
           </div>
 
@@ -455,52 +508,31 @@ export default function Stationen({ token }) {
 
           {/* Interaction Buttons */}
           <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem' }}>
-            {currentTask.status === 'Neu' ? (
-              <>
-                <button 
-                  className="btn btn-secondary" 
-                  onClick={() => handleUpdateItemStatus(currentTask, 'Zubereitung')}
-                  style={{ flex: 1, padding: '1.2rem', fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                >
-                  <PlayIcon /> Zubereitung starten
-                </button>
-                <button 
-                  className="btn btn-primary" 
-                  onClick={() => handleUpdateItemStatus(currentTask, 'Fertig')}
-                  style={{ flex: 1.5, padding: '1.2rem', fontSize: '1.1rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#10b981', borderColor: '#10b981' }}
-                >
-                  <CheckCircleIcon /> FERTIG ✓
-                </button>
-              </>
-            ) : (
-              <>
-                <button 
-                  className="btn btn-secondary" 
-                  onClick={() => handleUpdateItemStatus(currentTask, 'Neu')}
-                  style={{ flex: 1, padding: '1.2rem', fontSize: '1.1rem', fontWeight: 700 }}
-                >
-                  ↩ Zurück zu Neu
-                </button>
-                <button 
-                  className="btn btn-primary" 
-                  onClick={() => handleUpdateItemStatus(currentTask, 'Fertig')}
-                  style={{ 
-                    flex: 2, 
-                    padding: '1.2rem', 
-                    fontSize: '1.2rem', 
-                    fontWeight: 900, 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    justifyContent: 'center', 
-                    backgroundColor: '#10b981', 
-                    borderColor: '#10b981',
-                    animation: 'pulse 1.5s infinite' 
-                  }}
-                >
-                  <CheckCircleIcon /> FERTIG & NÄCHSTES
-                </button>
-              </>
-            )}
+            <button 
+              className="btn btn-secondary" 
+              onClick={() => handleUpdateItemStatus(currentTask, 'Neu')}
+              style={{ flex: 1, padding: '1.2rem', fontSize: '1.1rem', fontWeight: 700 }}
+            >
+              ↩ Abgeben (Freigeben)
+            </button>
+            <button 
+              className="btn btn-primary" 
+              onClick={() => handleUpdateItemStatus(currentTask, 'Fertig')}
+              style={{ 
+                flex: 2, 
+                padding: '1.2rem', 
+                fontSize: '1.2rem', 
+                fontWeight: 900, 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                backgroundColor: '#10b981', 
+                borderColor: '#10b981',
+                animation: 'pulse 1.5s infinite' 
+              }}
+            >
+              <CheckCircleIcon /> FERTIG & NÄCHSTES
+            </button>
           </div>
 
         </div>
@@ -521,57 +553,66 @@ export default function Stationen({ token }) {
             Alles erledigt!
           </h2>
           <p style={{ color: 'var(--text-secondary)', maxWidth: '400px', margin: '0 auto' }}>
-            Im Moment gibt es keine Bestellungen in der Warteschlange für diese Station. Entspanne dich kurz!
+            Es gibt aktuell keine unverteilten Aufgaben für diese Station. Entspanne dich kurz!
           </p>
         </div>
       )}
 
       {/* 4. Upcoming Queue Preview */}
-      {tasks.length > 1 && (
+      {upcomingTasks.length > 0 && (
         <div style={{ marginTop: '2.5rem' }}>
           <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.2rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
-            Nächste Aufgaben in der Warteschlange ({tasks.length - 1})
+            Warteschlange dieser Station ({upcomingTasks.length})
           </h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            {tasks.slice(1, 6).map((task, idx) => (
-              <div 
-                key={idx} 
-                style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center', 
-                  padding: '1rem 1.25rem', 
-                  backgroundColor: 'var(--bg-secondary)', 
-                  border: '1px solid var(--border-color)', 
-                  borderRadius: '10px' 
-                }}
-              >
-                <div>
-                  <strong style={{ color: 'var(--text-primary)', fontSize: '1.05rem' }}>
-                    {task.productName.split('(')[0].trim()}
-                  </strong>
-                  {task.toppings && task.toppings.length > 0 && (
-                    <span style={{ color: 'var(--accent)', fontSize: '0.85rem', marginLeft: '0.5rem', fontWeight: 600 }}>
-                      (+ {task.toppings.join(', ')})
+            {upcomingTasks.slice(0, 5).map((task, idx) => {
+              const isAssignedToOther = task.assignedTo && task.assignedTo !== deviceId;
+              
+              return (
+                <div 
+                  key={idx} 
+                  style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    padding: '1rem 1.25rem', 
+                    backgroundColor: 'var(--bg-secondary)', 
+                    border: isAssignedToOther ? '1px solid rgba(255,255,255,0.03)' : '1px solid var(--border-color)', 
+                    borderRadius: '10px',
+                    opacity: isAssignedToOther ? 0.5 : 1
+                  }}
+                >
+                  <div>
+                    <strong style={{ color: 'var(--text-primary)', fontSize: '1.05rem' }}>
+                      {task.productName.split('(')[0].trim()}
+                    </strong>
+                    {task.toppings && task.toppings.length > 0 && (
+                      <span style={{ color: 'var(--accent)', fontSize: '0.85rem', marginLeft: '0.5rem', fontWeight: 600 }}>
+                        (+ {task.toppings.join(', ')})
+                      </span>
+                    )}
+                    <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.15rem' }}>
+                      Kunde: {task.customerName} {task.customerClass ? `| Ort: ${task.customerClass}` : ''}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ fontWeight: 800, color: 'var(--text-muted)', fontSize: '0.95rem' }}>
+                      #{task.orderNumber || task.orderId.replace('C-', '')}
                     </span>
-                  )}
-                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: '0.15rem' }}>
-                    Kunde: {task.customerName} {task.customerClass ? `| Ort: ${task.customerClass}` : ''}
+                    <div style={{ 
+                      fontSize: '0.75rem', 
+                      color: isAssignedToOther ? 'var(--status-zubereitung)' : 'var(--text-muted)', 
+                      fontWeight: 'bold' 
+                    }}>
+                      {isAssignedToOther ? '🔥 Backt an anderem Eisen' : '⏳ Wartet'}
+                    </div>
                   </div>
                 </div>
-                <div style={{ textAlign: 'right' }}>
-                  <span style={{ fontWeight: 800, color: 'var(--text-muted)', fontSize: '0.95rem' }}>
-                    #{task.orderNumber || task.orderId.replace('C-', '')}
-                  </span>
-                  <div style={{ fontSize: '0.75rem', color: task.status === 'Zubereitung' ? 'var(--status-zubereitung)' : 'var(--text-muted)', fontWeight: 'bold' }}>
-                    {task.status === 'Zubereitung' ? 'Backt bereits' : 'Wartet'}
-                  </div>
-                </div>
-              </div>
-            ))}
-            {tasks.length > 6 && (
+              );
+            })}
+            {upcomingTasks.length > 5 && (
               <div style={{ textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: '0.25rem' }}>
-                ...und {tasks.length - 6} weitere Aufgaben
+                ...und {upcomingTasks.length - 5} weitere Aufgaben
               </div>
             )}
           </div>

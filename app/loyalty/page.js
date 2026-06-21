@@ -220,7 +220,7 @@ export default function LoyaltyPage() {
         {/* Fields Section (Progress) */}
         <div style={{ padding: "0.8rem 1.2rem 0.2rem" }}>
           <div style={{ fontSize: "0.58rem", color: "rgba(255, 255, 255, 0.75)", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: "0.2rem" }}>
-            Stempel bis zu der nächsten Belohnung:
+            Stempel bis zu einer kostenlosen Bestellung:
           </div>
           <div style={{ fontWeight: "600", fontSize: "1.3rem", color: "white" }}>
             {card.stamps}/5

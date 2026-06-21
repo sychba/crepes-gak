@@ -31,6 +31,7 @@ export default defineSchema({
         priceAtOrder: v.number(),
         toppings: v.optional(v.array(v.string())), // Array of selected toppings
         status: v.optional(v.string()), // "Neu" | "Zubereitung" | "Fertig"
+        assignedTo: v.optional(v.string()), // Device ID claiming this task
       })
     ),
   })
