@@ -81,31 +81,17 @@ export async function generatePass({ cardId, customerName, stamps, authToken, ba
       altText: "", // Leerer String entfernt die hässliche ID unter dem QR-Code
     },
     organizationName: "Crêpes GAK",
-    description: "Crêpes GAK Treuekarte",
-    logoText: "Crêpes GAK",
+    description: "Crêpes GAK Stempelkarte",
+    logoText: "Stempelkarte",
     foregroundColor: "rgb(255, 255, 255)",      // Weißer Text
     backgroundColor: "rgb(42, 24, 16)",         // Dunkelbrauner Hintergrund
     labelColor: "rgb(218, 165, 32)",            // Goldene Labels
     storeCard: {
-      primaryFields: [
-        {
-          key: "stamps",
-          label: "Stempel",
-          value: stamps === 10 ? "Gratis! 🎁" : `${stamps} von 10`,
-        },
-      ],
-      secondaryFields: [
-        {
-          key: "customerName",
-          label: "", // Leerer Label-Text entfernt das Wort "KUNDE" über dem Namen
-          value: customerName, // Da dies das einzige Feld in der Reihe ist, wird es von iOS deutlich größer dargestellt
-        },
-      ],
       auxiliaryFields: [
         {
           key: "reward",
           label: "BELOHNUNG",
-          value: "10. Crêpe GRATIS! 🎁",
+          value: "10. gratis 🎁",
         },
         {
           key: "status",
@@ -114,6 +100,11 @@ export async function generatePass({ cardId, customerName, stamps, authToken, ba
         },
       ],
       backFields: [
+        {
+          key: "customerName",
+          label: "Kunde",
+          value: customerName,
+        },
         {
           key: "terms",
           label: "Nutzungsbedingungen",
@@ -145,8 +136,6 @@ export async function generatePass({ cardId, customerName, stamps, authToken, ba
   const imageFiles = [
     { target: "icon.png", source: "icon.png" },
     { target: "icon@2x.png", source: "icon@2x.png" },
-    { target: "logo.png", source: "logo.png" },
-    { target: "logo@2x.png", source: "logo@2x.png" },
     { target: "strip.png", source: strip1xName },
     { target: "strip@2x.png", source: strip2xName }
   ];
