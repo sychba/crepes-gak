@@ -5,6 +5,7 @@ import GerateManager from './GerateManager';
 import LoyaltyScanner from './LoyaltyScanner';
 import Stationen from './Stationen';
 import Dashboard from './Dashboard';
+import Lieferungen from './Lieferungen';
 
 // Premium Inline SVGs for Navigation Tabs
 const CookIcon = () => (
@@ -54,6 +55,15 @@ const OverviewIcon = () => (
     <rect x="14" y="3" width="7" height="5"/>
     <rect x="14" y="12" width="7" height="9"/>
     <rect x="3" y="16" width="7" height="5"/>
+  </svg>
+);
+
+const DeliveryIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="1" y="3" width="15" height="13" />
+    <polygon points="16 8 20 8 23 11 23 16 16 16" />
+    <circle cx="5.5" cy="18.5" r="2.5" />
+    <circle cx="18.5" cy="18.5" r="2.5" />
   </svg>
 );
 
@@ -165,6 +175,13 @@ export default function Terminal({ navigate }) {
             <span>Übersicht</span>
           </button>
           <button
+            className={`terminal-tab-btn ${activeTab === 'lieferungen' ? 'active' : ''}`}
+            onClick={() => setActiveTab('lieferungen')}
+          >
+            <DeliveryIcon />
+            <span>Lieferungen</span>
+          </button>
+          <button
             className={`terminal-tab-btn ${activeTab === 'kueche' ? 'active' : ''}`}
             onClick={() => setActiveTab('kueche')}
           >
@@ -205,6 +222,7 @@ export default function Terminal({ navigate }) {
       <main className="main-content" style={{ padding: '1.5rem' }}>
         {activeTab === 'stationen' && <Stationen token={token} />}
         {activeTab === 'dashboard' && <Dashboard token={token} />}
+        {activeTab === 'lieferungen' && <Lieferungen token={token} />}
         {activeTab === 'kueche' && <Kueche token={token} />}
         {activeTab === 'kasse' && <Kasse token={token} />}
         {activeTab === 'gerate' && <GerateManager token={token} />}
