@@ -82,7 +82,7 @@ export async function generatePass({ cardId, customerName, stamps, authToken, ba
     },
     organizationName: "Crêpes GAK",
     description: "Crêpes GAK Stempelkarte",
-    logoText: "Stempelkarte",
+    logoText: "",
     foregroundColor: "rgb(255, 255, 255)",      // Weißer Text
     backgroundColor: "rgb(42, 24, 16)",         // Dunkelbrauner Hintergrund
     labelColor: "rgb(218, 165, 32)",            // Goldene Labels
@@ -91,24 +91,19 @@ export async function generatePass({ cardId, customerName, stamps, authToken, ba
         {
           key: "reward",
           label: "BELOHNUNG",
-          value: "10. gratis 🎁",
+          value: "Gratis-Crêpe 🎁",
         },
         {
-          key: "status",
-          label: "STATUS",
-          value: stamps === 10 ? "Einlösen! 🎁" : (stamps >= 7 ? "Fast am Ziel! 😍" : (stamps >= 4 ? "Halbzeit! 🎉" : "Sammeln 🥞")),
+          key: "customerName",
+          label: "KUNDE",
+          value: customerName,
         },
       ],
       backFields: [
         {
-          key: "customerName",
-          label: "Kunde",
-          value: customerName,
-        },
-        {
           key: "terms",
           label: "Nutzungsbedingungen",
-          value: "Für jeden gekauften Crêpe am Crêpes-GAK-Stand gibt es einen Stempel. Bei 10 Stempeln erhältst du deinen 10. (oder nächsten) Crêpe gratis. Nach dem Einlösen wird die Karte automatisch wieder auf 0 gesetzt.",
+          value: "Für jeden gekauften Crêpe am Crêpes-GAK-Stand gibt es einen Stempel. Bei 5 Stempeln erhältst du deinen 6. Crêpe gratis. Nach dem Einlösen wird die Karte automatisch wieder auf 0 gesetzt.",
         },
         {
           key: "contact",
@@ -132,12 +127,14 @@ export async function generatePass({ cardId, customerName, stamps, authToken, ba
   // Dynamische Auswahl der passenden Stempel-Grafik je nach Punktestand
   const strip1xName = `strip_${stamps}.png`;
   const strip2xName = `strip_${stamps}@2x.png`;
+  const strip3xName = `strip_${stamps}@3x.png`;
 
   const imageFiles = [
     { target: "icon.png", source: "icon.png" },
     { target: "icon@2x.png", source: "icon@2x.png" },
     { target: "strip.png", source: strip1xName },
-    { target: "strip@2x.png", source: strip2xName }
+    { target: "strip@2x.png", source: strip2xName },
+    { target: "strip@3x.png", source: strip3xName }
   ];
   
   for (const fileSpec of imageFiles) {

@@ -115,7 +115,7 @@ export default function LoyaltyPage() {
         <div className="login-icon">🥞</div>
         <h2 className="login-title">Crêpes GAK Club</h2>
         <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "1.5rem", textAlign: "center" }}>
-          Sammle Stempel bei jedem Kauf! Für jeden Crêpe gibt es einen Stempel. Nach 10 Stempeln erhältst du dein Gratis-Crêpe!
+          Sammle Stempel bei jedem Kauf! Für jeden Crêpe gibt es einen Stempel. Nach 5 Stempeln erhältst du dein Gratis-Crêpe!
         </p>
 
         {error && <div className="alert alert-error">{error}</div>}
@@ -161,7 +161,7 @@ export default function LoyaltyPage() {
   }
 
   // 3. PASS DASHBOARD
-  const isCardFull = card.stamps === 10;
+  const isCardFull = card.stamps === 5;
 
   return (
     <div style={{ maxWidth: "480px", margin: "2rem auto", padding: "0 1rem" }}>
@@ -226,7 +226,7 @@ export default function LoyaltyPage() {
             <div style={{ textAlign: "right" }}>
               <div style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Stempel</div>
               <div style={{ fontWeight: "extrabold", fontSize: "1.2rem", color: "var(--accent)" }}>
-                {card.stamps} / 10
+                {card.stamps} / 5
               </div>
             </div>
           </div>
@@ -235,9 +235,9 @@ export default function LoyaltyPage() {
         {/* Stamp Cards Grid (In Mockup) */}
         <div style={{ padding: "1.5rem 1.2rem 1.2rem", background: "rgba(0,0,0,0.2)" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "0.6rem" }}>
-            {Array.from({ length: 10 }).map((_, index) => {
+            {Array.from({ length: 5 }).map((_, index) => {
               const isStamped = index < card.stamps;
-              const isLast = index === 9;
+              const isLast = index === 4;
               
               // Simuliert den unperfekten Drehwinkel eines echten Stempels
               const rotations = [-8, 12, -5, 10, -12, 6, -10, 8, -6, 15];
