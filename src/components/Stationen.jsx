@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 
@@ -167,7 +167,7 @@ export default function Stationen({ token }) {
     for (const order of activeOrders) {
       order.items.forEach((item, index) => {
         const prod = products.find(p => p.id === item.productId);
-        const category = prod ? prod.category : "";
+        const category = item.category || (prod ? prod.category : "");
 
         let matches = false;
         if (selectedStation === 'crepes' && category === 'Crepes') matches = true;
@@ -197,7 +197,9 @@ export default function Stationen({ token }) {
     return list.sort((a, b) => a.createdAt - b.createdAt);
   };
 
-  const allTasks = getTasks();
+  const allTasks = useMemo(() => {
+    return getTasks();
+  }, [orders, products, selectedStation]);
 
   // Find task assigned to this device, if any
   const currentTask = allTasks.find(t => t.assignedTo === deviceId);
@@ -262,6 +264,15 @@ export default function Stationen({ token }) {
       alert("Fehler beim Aktualisieren der Stationstask.");
     }
   };
+
+  // Loading State
+  if (orders === undefined || products === undefined) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '50vh', flexDirection: 'column', gap: '1rem' }}>
+        <div className="status-badge neu" style={{ animation: 'pulse 1.5s infinite' }}>Lade Stationen...</div>
+      </div>
+    );
+  }
 
   // 1. Station Selector UI
   if (!selectedStation) {

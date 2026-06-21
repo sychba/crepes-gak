@@ -132,7 +132,8 @@ export const create = mutation({
           quantity: 1, // Flattened
           priceAtOrder: basePrice + toppingsPrice,
           toppings: item.toppings || [],
-          status: "Neu" // Initialize item status
+          status: "Neu", // Initialize item status
+          category: product ? product.category : "" // Save category in order
         });
       }
     }

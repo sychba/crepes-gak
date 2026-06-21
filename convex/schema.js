@@ -32,6 +32,7 @@ export default defineSchema({
         toppings: v.optional(v.array(v.string())), // Array of selected toppings
         status: v.optional(v.string()), // "Neu" | "Zubereitung" | "Fertig"
         assignedTo: v.optional(v.string()), // Device ID claiming this task
+        category: v.optional(v.string()), // Category of product (e.g. Crepes, Getränke)
       })
     ),
   })
