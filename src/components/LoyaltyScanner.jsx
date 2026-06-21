@@ -78,7 +78,7 @@ export default function LoyaltyScanner({ token }) {
     if (!selectedCardId) return;
     try {
       const res = await addStampMutation({ cardId: selectedCardId });
-      setMessage({ type: "success", text: `Stempel erfolgreich hinzugefügt! Stand: ${res.stamps} von 5.` });
+      setMessage({ type: "success", text: `Stempel erfolgreich hinzugefügt! Stand: ${res.stamps} von 10.` });
       // Trigger Apple Wallet push notification
       await triggerPushNotification(res.pushTokens);
     } catch (err) {
@@ -225,8 +225,8 @@ export default function LoyaltyScanner({ token }) {
               {/* Customer Header */}
               <div style={{ borderBottom: "1px solid var(--border)", paddingBottom: "1rem", marginBottom: "1.5rem" }}>
                 <h3 style={{ margin: 0, fontSize: "1.2rem", color: "var(--text-primary)" }}>{card.customerName}</h3>
-                <span className="terminal-badge" style={{ marginTop: "0.5rem", background: card.stamps === 5 ? "var(--success)" : "var(--accent)" }}>
-                  {card.stamps} von 5 Stempeln
+                <span className="terminal-badge" style={{ marginTop: "0.5rem", background: card.stamps === 10 ? "var(--success)" : "var(--accent)" }}>
+                  {card.stamps} von 10 Stempeln
                 </span>
                 {card.redeemedCount > 0 && (
                   <span style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginLeft: "1rem" }}>
@@ -237,9 +237,9 @@ export default function LoyaltyScanner({ token }) {
 
               {/* Visual Stamp Card Grid */}
               <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "0.75rem", marginBottom: "2rem" }}>
-                {Array.from({ length: 5 }).map((_, index) => {
+                {Array.from({ length: 10 }).map((_, index) => {
                   const isStamped = index < card.stamps;
-                  const isLast = index === 4;
+                  const isLast = index === 9;
 
                   // Simuliert den unperfekten Drehwinkel eines echten Stempels
                   const rotations = [-8, 12, -5, 10, -12, 6, -10, 8, -6, 15];
@@ -279,7 +279,7 @@ export default function LoyaltyScanner({ token }) {
 
               {/* Action Buttons */}
               <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
-                {card.stamps < 5 ? (
+                {card.stamps < 10 ? (
                   <button
                     className="btn btn-primary"
                     onClick={handleAddStamp}
@@ -289,7 +289,7 @@ export default function LoyaltyScanner({ token }) {
                   </button>
                 ) : (
                   <div style={{ background: "rgba(76, 175, 80, 0.15)", border: "1px solid var(--success)", padding: "1rem", borderRadius: "8px", textAlign: "center", marginBottom: "1rem" }}>
-                    <h4 style={{ margin: "0 0 0.5rem", color: "var(--success)", fontSize: "1.1rem" }}>🎁 5 Stempel voll!</h4>
+                    <h4 style={{ margin: "0 0 0.5rem", color: "var(--success)", fontSize: "1.1rem" }}>🎁 10 Stempel voll!</h4>
                     <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "1rem" }}>
                       Der Kunde erhält diese Bestellung gratis. Nach Erhalt hier einlösen, um die Karte zurückzusetzen.
                     </p>

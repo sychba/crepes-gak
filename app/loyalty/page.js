@@ -115,7 +115,7 @@ export default function LoyaltyPage() {
         <div className="login-icon">🥞</div>
         <h2 className="login-title">Crêpes GAK Club</h2>
         <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "1.5rem", textAlign: "center" }}>
-          Sammle Stempel bei jedem Kauf! Für jeden Crêpe gibt es einen Stempel. Nach 5 Stempeln erhältst du dein Gratis-Crêpe!
+          Sammle Stempel bei jedem Kauf! Für jeden Crêpe gibt es einen Stempel. Nach 10 Stempeln erhältst du dein Gratis-Crêpe!
         </p>
 
         {error && <div className="alert alert-error">{error}</div>}
@@ -161,7 +161,7 @@ export default function LoyaltyPage() {
   }
 
   // 3. PASS DASHBOARD
-  const isCardFull = card.stamps === 5;
+  const isCardFull = card.stamps === 10;
 
   return (
     <div style={{ maxWidth: "480px", margin: "2rem auto", padding: "0 1rem" }}>
@@ -183,26 +183,17 @@ export default function LoyaltyPage() {
       <div
         className={`wallet-card ${isCardFull ? "full-pulse" : ""}`}
         style={{
-          background: "#0f0f0f",
+          background: "rgb(138, 123, 118)",
           borderRadius: "16px",
           color: "white",
-          boxShadow: "0 10px 25px rgba(0,0,0,0.3)",
+          boxShadow: "0 10px 25px rgba(0,0,0,0.25)",
           overflow: "hidden",
-          border: "1px solid rgba(212,175,55,0.2)",
           position: "relative",
           marginBottom: "1.5rem",
           maxWidth: "375px",
           margin: "0 auto 1.5rem",
         }}
       >
-        {/* Pass Header */}
-        <div style={{ padding: "1rem 1.2rem", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <span style={{ fontSize: "1.3rem" }}>🥞</span>
-            <span style={{ fontWeight: "600", letterSpacing: "0.5px", fontSize: "0.95rem", color: "white" }}>Stempelkarte</span>
-          </div>
-        </div>
-
         {/* Pass Middle Section / Strip Image Background */}
         <div
           style={{
@@ -210,31 +201,29 @@ export default function LoyaltyPage() {
             backgroundSize: "100% 100%",
             backgroundPosition: "center",
             width: "375px",
-            height: "98px",
-            borderBottom: "1px solid rgba(255,255,255,0.06)",
+            height: "123px",
+            borderBottom: "1px solid rgba(255,255,255,0.1)",
           }}
         />
 
-        {/* Fields Section (BELOHNUNG and KUNDE) */}
-        <div style={{ padding: "1.2rem", display: "flex", justifyContent: "space-between", background: "#0a0a0a" }}>
-          <div>
-            <div style={{ fontSize: "0.62rem", color: "rgb(212, 175, 55)", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: "0.2rem" }}>Belohnung</div>
-            <div style={{ fontWeight: "bold", fontSize: "0.95rem", color: "white" }}>Gratis-Crêpe</div>
+        {/* Fields Section (Progress) */}
+        <div style={{ padding: "1.2rem 1.2rem 0.4rem" }}>
+          <div style={{ fontSize: "0.58rem", color: "rgba(255, 255, 255, 0.75)", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: "0.2rem" }}>
+            Stempel bis zu der nächsten Belohnung:
           </div>
-          <div style={{ textAlign: "right" }}>
-            <div style={{ fontSize: "0.62rem", color: "rgb(212, 175, 55)", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: "0.2rem" }}>Kunde</div>
-            <div style={{ fontWeight: "bold", fontSize: "0.95rem", color: "white" }}>{card.customerName}</div>
+          <div style={{ fontWeight: "600", fontSize: "1.3rem", color: "white" }}>
+            {card.stamps}/10
           </div>
         </div>
 
         {/* Barcode & Scan Info */}
-        <div style={{ background: "white", padding: "1.8rem 1.2rem", display: "flex", flexDirection: "column", alignItems: "center", color: "#2a1810" }}>
-          <div style={{ background: "#fff", padding: "0.75rem", borderRadius: "14px", border: "1.5px solid #eaeaea", boxShadow: "0 6px 20px rgba(0,0,0,0.06)", marginBottom: "0.5rem" }}>
-            <canvas ref={canvasRef} style={{ width: "200px", height: "200px", display: "block" }}></canvas>
+        <div style={{ padding: "0.5rem 1.2rem 1.5rem", display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <div style={{ background: "white", padding: "1rem", borderRadius: "10px", display: "flex", flexDirection: "column", alignItems: "center", boxShadow: "0 4px 12px rgba(0,0,0,0.15)" }}>
+            <canvas ref={canvasRef} style={{ width: "160px", height: "160px", display: "block" }}></canvas>
+            <span style={{ fontSize: "0.58rem", fontWeight: "600", color: "#666", marginTop: "0.4rem", textTransform: "uppercase", letterSpacing: "0.3px" }}>
+              Am Stand zum Scannen vorzeigen
+            </span>
           </div>
-          <span style={{ fontSize: "0.72rem", fontWeight: "700", color: "#888", marginTop: "0.75rem", textTransform: "uppercase", letterSpacing: "0.5px" }}>
-            Am Stand zum Scannen vorzeigen
-          </span>
         </div>
       </div>
 

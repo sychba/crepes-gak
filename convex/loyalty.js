@@ -47,8 +47,8 @@ export const addStamp = mutation({
     if (!card) {
       throw new Error("Stempelkarte nicht gefunden");
     }
-    if (card.stamps >= 5) {
-      throw new Error("Karte ist bereits voll (5 Stempel). Bitte erst einlösen.");
+    if (card.stamps >= 10) {
+      throw new Error("Karte ist bereits voll (10 Stempel). Bitte erst einlösen.");
     }
 
     const newStamps = card.stamps + 1;
@@ -79,8 +79,8 @@ export const redeemCard = mutation({
     if (!card) {
       throw new Error("Stempelkarte nicht gefunden");
     }
-    if (card.stamps < 5) {
-      throw new Error("Karte hat noch keine 5 Stempel.");
+    if (card.stamps < 10) {
+      throw new Error("Karte hat noch keine 10 Stempel.");
     }
 
     await ctx.db.patch(args.cardId, {

@@ -84,26 +84,26 @@ export async function generatePass({ cardId, customerName, stamps, authToken, ba
     description: "Crêpes GAK Stempelkarte",
     logoText: "",
     foregroundColor: "rgb(255, 255, 255)",      // Reinweißes Text
-    backgroundColor: "rgb(15, 15, 15)",         // Tiefes Anthrazit/Schwarz
-    labelColor: "rgb(212, 175, 55)",            // Champagner-Gold
+    backgroundColor: "rgb(138, 123, 118)",      // Warmes Taupe/Braun
+    labelColor: "rgb(255, 255, 255)",           // Weißes Label
     storeCard: {
       auxiliaryFields: [
         {
-          key: "reward",
-          label: "BELOHNUNG",
-          value: "Gratis-Crêpe",
-        },
-        {
-          key: "customerName",
-          label: "KUNDE",
-          value: customerName,
+          key: "stamps",
+          label: "STEMPEL BIS ZU DER NAECHSTEN BELOHNUNG:",
+          value: `${stamps}/10`,
         },
       ],
       backFields: [
         {
+          key: "customerName",
+          label: "Kunde",
+          value: customerName,
+        },
+        {
           key: "terms",
           label: "Nutzungsbedingungen",
-          value: "Für jeden gekauften Crêpe am Crêpes-GAK-Stand gibt es einen Stempel. Bei 5 Stempeln erhältst du deinen 6. Crêpe gratis. Nach dem Einlösen wird die Karte automatisch wieder auf 0 gesetzt.",
+          value: "Für jeden gekauften Crêpe am Crêpes-GAK-Stand gibt es einen Stempel. Bei 10 Stempeln erhältst du deinen 11. Crêpe gratis. Nach dem Einlösen wird die Karte automatisch wieder auf 0 gesetzt.",
         },
         {
           key: "contact",
