@@ -169,7 +169,13 @@ export default function Stationen({ token }) {
     for (const order of activeOrders) {
       order.items.forEach((item, index) => {
         const prod = products.find(p => p.id === item.productId);
-        const category = item.category || (prod ? prod.category : "");
+        let category = item.category || (prod ? prod.category : "");
+
+        if (item.productId === 'base-crepe') {
+          category = 'Crepes';
+        } else if (item.productId === 'base-waffel') {
+          category = 'Waffeln';
+        }
 
         let matches = false;
         if (selectedStation === 'crepes' && category === 'Crepes') matches = true;

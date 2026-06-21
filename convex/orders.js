@@ -125,15 +125,26 @@ export const create = mutation({
         ? ` (${item.toppings.join(", ")})`
         : "";
 
+      let displayName = product ? product.name : "Unbekanntes Produkt";
+      let displayCategory = product ? product.category : "";
+
+      if (item.productId === 'base-crepe') {
+        displayName = "Crepe";
+        displayCategory = "Crepes";
+      } else if (item.productId === 'base-waffel') {
+        displayName = "Waffel";
+        displayCategory = "Waffeln";
+      }
+
       for (let i = 0; i < item.quantity; i++) {
         orderItems.push({
           productId: item.productId,
-          productName: (product ? product.name : "Unbekanntes Produkt") + toppingsLabel,
+          productName: displayName + toppingsLabel,
           quantity: 1, // Flattened
           priceAtOrder: basePrice + toppingsPrice,
           toppings: item.toppings || [],
           status: "Neu", // Initialize item status
-          category: product ? product.category : "" // Save category in order
+          category: displayCategory // Save category in order
         });
       }
     }
@@ -173,8 +184,7 @@ export const create = mutation({
       // Zähle Crêpes im Warenkorb
       let crepeCount = 0;
       for (const item of orderItems) {
-        const product = products.find((p) => p.id === item.productId);
-        if (product && product.category === "Crepes") {
+        if (item.category === "Crepes") {
           crepeCount += item.quantity;
         }
       }
@@ -195,8 +205,7 @@ export const create = mutation({
               const nonCrepeItems = [];
               
               for (const item of orderItems) {
-                const product = products.find((p) => p.id === item.productId);
-                if (product && product.category === "Crepes") {
+                if (item.category === "Crepes") {
                   for (let i = 0; i < item.quantity; i++) {
                     crepeItems.push({
                       ...item,
