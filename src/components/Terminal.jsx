@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Kasse from './Kasse';
 import Kueche from './Kueche';
 import GerateManager from './GerateManager';
+import LoyaltyScanner from './LoyaltyScanner';
 
 // Premium Inline SVGs for Navigation Tabs
 const CookIcon = () => (
@@ -25,8 +26,29 @@ const DeviceIcon = () => (
   </svg>
 );
 
+const GiftIcon = () => (
+  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="20 12 20 22 4 22 4 12"/>
+    <rect x="2" y="7" width="20" height="5"/>
+    <line x1="12" y1="22" x2="12" y2="7"/>
+    <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
+    <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+  </svg>
+);
+
 export default function Terminal({ navigate }) {
-  const [token, setToken] = useState(localStorage.getItem('crepes_staff_token') || null);
+  const [token, setToken] = useState(null);
+
+  // Load token on mount to avoid Next.js server-side rendering errors
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedToken = localStorage.getItem("crepes_staff_token");
+      if (savedToken) {
+        setToken(savedToken);
+      }
+    }
+  }, []);
+
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState(null);
   const [activeTab, setActiveTab] = useState('kueche'); // 'kasse' or 'kueche'
@@ -127,6 +149,13 @@ export default function Terminal({ navigate }) {
             <DeviceIcon />
             <span>Geräte</span>
           </button>
+          <button
+            className={`terminal-tab-btn ${activeTab === 'loyalty' ? 'active' : ''}`}
+            onClick={() => setActiveTab('loyalty')}
+          >
+            <GiftIcon />
+            <span>Treuekarten</span>
+          </button>
         </div>
 
         <div>
@@ -141,6 +170,7 @@ export default function Terminal({ navigate }) {
         {activeTab === 'kueche' && <Kueche token={token} />}
         {activeTab === 'kasse' && <Kasse token={token} />}
         {activeTab === 'gerate' && <GerateManager token={token} />}
+        {activeTab === 'loyalty' && <LoyaltyScanner token={token} />}
       </main>
     </div>
   );

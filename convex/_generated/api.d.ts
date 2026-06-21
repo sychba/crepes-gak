@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as loyalty from "../loyalty.js";
 import type * as orders from "../orders.js";
 import type * as products from "../products.js";
 
@@ -18,6 +19,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  loyalty: typeof loyalty;
   orders: typeof orders;
   products: typeof products;
 }>;

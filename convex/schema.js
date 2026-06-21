@@ -38,5 +38,24 @@ export default defineSchema({
   blockedDevices: defineTable({
     deviceId: v.string(),
     blockedAt: v.number(),
-  }).index("by_device", ["deviceId"])
+  }).index("by_device", ["deviceId"]),
+
+  loyaltyCards: defineTable({
+    customerName: v.string(),
+    stamps: v.number(), // 0 to 10
+    authToken: v.string(), // Random authentication token for downloading pkpass
+    redeemedCount: v.number(), // Number of times they redeemed their 10 stamps
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_token", ["authToken"]),
+
+  passRegistrations: defineTable({
+    serialNumber: v.string(), // ID of loyaltyCard
+    deviceLibraryIdentifier: v.string(),
+    pushToken: v.string(),
+    createdAt: v.number(),
+  })
+    .index("by_serial", ["serialNumber"])
+    .index("by_device_and_serial", ["deviceLibraryIdentifier", "serialNumber"])
+    .index("by_device", ["deviceLibraryIdentifier"])
 });
