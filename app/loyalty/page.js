@@ -183,96 +183,47 @@ export default function LoyaltyPage() {
       <div
         className={`wallet-card ${isCardFull ? "full-pulse" : ""}`}
         style={{
-          background: "linear-gradient(135deg, #2a1810 0%, #150a06 100%)",
+          background: "#0f0f0f",
           borderRadius: "16px",
           color: "white",
           boxShadow: "0 10px 25px rgba(0,0,0,0.3)",
           overflow: "hidden",
-          border: "1px solid rgba(218,165,32,0.2)",
+          border: "1px solid rgba(212,175,55,0.2)",
           position: "relative",
           marginBottom: "1.5rem",
+          maxWidth: "375px",
+          margin: "0 auto 1.5rem",
         }}
       >
         {/* Pass Header */}
-        <div style={{ padding: "1.2rem", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+        <div style={{ padding: "1rem 1.2rem", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <span style={{ fontSize: "1.5rem" }}>🥞</span>
-            <span style={{ fontWeight: "800", letterSpacing: "0.5px", fontSize: "1.05rem" }}>Crêpes GAK</span>
+            <span style={{ fontSize: "1.3rem" }}>🥞</span>
+            <span style={{ fontWeight: "600", letterSpacing: "0.5px", fontSize: "0.95rem", color: "white" }}>Stempelkarte</span>
           </div>
-          <span style={{ fontSize: "0.75rem", background: "rgba(218,165,32,0.2)", color: "var(--accent)", padding: "0.2rem 0.5rem", borderRadius: "10px", fontWeight: "bold" }}>
-            Club-Karte
-          </span>
         </div>
 
         {/* Pass Middle Section / Strip Image Background */}
         <div
           style={{
-            backgroundImage: "url('/pass/strip.png')",
-            backgroundSize: "cover",
+            backgroundImage: `url('/pass/strip_${card.stamps}.png')`,
+            backgroundSize: "100% 100%",
             backgroundPosition: "center",
-            padding: "1.5rem 1.2rem",
-            display: "flex",
-            flexDirection: "column",
-            gap: "0.75rem",
+            width: "375px",
+            height: "98px",
             borderBottom: "1px solid rgba(255,255,255,0.06)",
-            textShadow: "1px 1px 3px rgba(0,0,0,0.8)",
           }}
-        >
-          <div style={{ display: "flex", justifyContent: "space-between" }}>
-            <div>
-              <div style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Kunde</div>
-              <div style={{ fontWeight: "bold", fontSize: "1.1rem" }}>{card.customerName}</div>
-            </div>
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: "0.5px" }}>Stempel</div>
-              <div style={{ fontWeight: "extrabold", fontSize: "1.2rem", color: "var(--accent)" }}>
-                {card.stamps} / 5
-              </div>
-            </div>
+        />
+
+        {/* Fields Section (BELOHNUNG and KUNDE) */}
+        <div style={{ padding: "1.2rem", display: "flex", justifyContent: "space-between", background: "#0a0a0a" }}>
+          <div>
+            <div style={{ fontSize: "0.62rem", color: "rgb(212, 175, 55)", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: "0.2rem" }}>Belohnung</div>
+            <div style={{ fontWeight: "bold", fontSize: "0.95rem", color: "white" }}>Gratis-Crêpe</div>
           </div>
-        </div>
-
-        {/* Stamp Cards Grid (In Mockup) */}
-        <div style={{ padding: "1.5rem 1.2rem 1.2rem", background: "rgba(0,0,0,0.2)" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: "0.6rem" }}>
-            {Array.from({ length: 5 }).map((_, index) => {
-              const isStamped = index < card.stamps;
-              const isLast = index === 4;
-              
-              // Simuliert den unperfekten Drehwinkel eines echten Stempels
-              const rotations = [-8, 12, -5, 10, -12, 6, -10, 8, -6, 15];
-              const rotation = rotations[index] || 0;
-
-              return (
-                <div
-                  key={index}
-                  style={{
-                    aspectRatio: "1/1",
-                    borderRadius: "50%",
-                    border: isStamped 
-                      ? "2px solid #DAA520" 
-                      : "2px dashed rgba(255,255,255,0.15)",
-                    background: isStamped 
-                      ? "rgba(218,165,32,0.15)" 
-                      : "rgba(255,255,255,0.02)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    fontSize: isStamped ? "1.3rem" : "0.75rem",
-                    color: isStamped ? "#DAA520" : "rgba(255,255,255,0.2)",
-                    fontWeight: "800",
-                    position: "relative",
-                    boxShadow: isStamped ? "0 0 10px rgba(218,165,32,0.3)" : "none",
-                    transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                    transform: isStamped 
-                      ? `scale(1.15) rotate(${rotation}deg)` 
-                      : "scale(1)",
-                  }}
-                >
-                  {isStamped ? (isLast ? "🎁" : "🥞") : index + 1}
-                </div>
-              );
-            })}
+          <div style={{ textAlign: "right" }}>
+            <div style={{ fontSize: "0.62rem", color: "rgb(212, 175, 55)", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: "0.2rem" }}>Kunde</div>
+            <div style={{ fontWeight: "bold", fontSize: "0.95rem", color: "white" }}>{card.customerName}</div>
           </div>
         </div>
 

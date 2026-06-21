@@ -83,15 +83,15 @@ export async function generatePass({ cardId, customerName, stamps, authToken, ba
     organizationName: "Crêpes GAK",
     description: "Crêpes GAK Stempelkarte",
     logoText: "",
-    foregroundColor: "rgb(255, 255, 255)",      // Weißer Text
-    backgroundColor: "rgb(42, 24, 16)",         // Dunkelbrauner Hintergrund
-    labelColor: "rgb(218, 165, 32)",            // Goldene Labels
+    foregroundColor: "rgb(255, 255, 255)",      // Reinweißes Text
+    backgroundColor: "rgb(15, 15, 15)",         // Tiefes Anthrazit/Schwarz
+    labelColor: "rgb(212, 175, 55)",            // Champagner-Gold
     storeCard: {
       auxiliaryFields: [
         {
           key: "reward",
           label: "BELOHNUNG",
-          value: "Gratis-Crêpe 🎁",
+          value: "Gratis-Crêpe",
         },
         {
           key: "customerName",
