@@ -56,7 +56,7 @@ export default function LoyaltyPage() {
         canvasRef.current,
         qrUrl,
         {
-          width: 160,
+          width: 200,
           margin: 1,
           color: {
             dark: "#2a1810", // Dark brown matching theme
@@ -238,23 +238,35 @@ export default function LoyaltyPage() {
             {Array.from({ length: 10 }).map((_, index) => {
               const isStamped = index < card.stamps;
               const isLast = index === 9;
+              
+              // Simuliert den unperfekten Drehwinkel eines echten Stempels
+              const rotations = [-8, 12, -5, 10, -12, 6, -10, 8, -6, 15];
+              const rotation = rotations[index] || 0;
+
               return (
                 <div
                   key={index}
                   style={{
                     aspectRatio: "1/1",
                     borderRadius: "50%",
-                    border: isStamped ? "2px solid var(--accent)" : "2px dashed rgba(255,255,255,0.2)",
-                    background: isStamped ? "rgba(218,165,32,0.2)" : "rgba(255,255,255,0.02)",
+                    border: isStamped 
+                      ? "2px solid #DAA520" 
+                      : "2px dashed rgba(255,255,255,0.15)",
+                    background: isStamped 
+                      ? "rgba(218,165,32,0.15)" 
+                      : "rgba(255,255,255,0.02)",
                     display: "flex",
                     alignItems: "center",
                     justifyContent: "center",
-                    fontSize: isStamped ? "1.1rem" : "0.75rem",
-                    color: isStamped ? "var(--accent)" : "rgba(255,255,255,0.3)",
-                    fontWeight: "bold",
+                    fontSize: isStamped ? "1.3rem" : "0.75rem",
+                    color: isStamped ? "#DAA520" : "rgba(255,255,255,0.2)",
+                    fontWeight: "800",
                     position: "relative",
+                    boxShadow: isStamped ? "0 0 10px rgba(218,165,32,0.3)" : "none",
                     transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-                    transform: isStamped ? "scale(1.05)" : "scale(1)",
+                    transform: isStamped 
+                      ? `scale(1.15) rotate(${rotation}deg)` 
+                      : "scale(1)",
                   }}
                 >
                   {isStamped ? (isLast ? "🎁" : "🥞") : index + 1}
@@ -265,9 +277,11 @@ export default function LoyaltyPage() {
         </div>
 
         {/* Barcode & Scan Info */}
-        <div style={{ background: "white", padding: "1.5rem 1.2rem", display: "flex", flexDirection: "column", alignItems: "center", color: "#2a1810" }}>
-          <canvas ref={canvasRef} style={{ width: "160px", height: "160px" }}></canvas>
-          <span style={{ fontSize: "0.75rem", fontWeight: "600", color: "#777", marginTop: "0.5rem", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+        <div style={{ background: "white", padding: "1.8rem 1.2rem", display: "flex", flexDirection: "column", alignItems: "center", color: "#2a1810" }}>
+          <div style={{ background: "#fff", padding: "0.75rem", borderRadius: "14px", border: "1.5px solid #eaeaea", boxShadow: "0 6px 20px rgba(0,0,0,0.06)", marginBottom: "0.5rem" }}>
+            <canvas ref={canvasRef} style={{ width: "200px", height: "200px", display: "block" }}></canvas>
+          </div>
+          <span style={{ fontSize: "0.72rem", fontWeight: "700", color: "#888", marginTop: "0.75rem", textTransform: "uppercase", letterSpacing: "0.5px" }}>
             Am Stand zum Scannen vorzeigen
           </span>
         </div>

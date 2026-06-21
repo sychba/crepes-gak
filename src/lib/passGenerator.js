@@ -78,7 +78,7 @@ export async function generatePass({ cardId, customerName, stamps, authToken, ba
       message: qrCodeLink,
       format: "PKBarcodeFormatQR",
       messageEncoding: "iso-8859-1",
-      altText: `ID: ${cardId}`,
+      altText: "", // Leerer String entfernt die hässliche ID unter dem QR-Code
     },
     organizationName: "Crêpes GAK",
     description: "Crêpes GAK Treuekarte",
@@ -100,12 +100,17 @@ export async function generatePass({ cardId, customerName, stamps, authToken, ba
           label: "Kunde",
           value: customerName,
         },
+        {
+          key: "progress",
+          label: "Fortschritt",
+          value: stamps === 10 ? "🎁🎁🎁🎁🎁🎁🎁🎁🎁🎁" : "🥞".repeat(stamps) + "⚪".repeat(10 - stamps),
+        },
       ],
       auxiliaryFields: [
         {
           key: "status",
           label: "Status",
-          value: stamps === 10 ? "Gratis Crêpe einlösen!" : "Sammeln...",
+          value: stamps === 10 ? "Gratis Crêpe!" : "Sammeln", // "Sammeln..." ohne Punkte verhindert Abschneiden
         },
       ],
       backFields: [

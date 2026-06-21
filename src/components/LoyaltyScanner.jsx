@@ -240,23 +240,35 @@ export default function LoyaltyScanner({ token }) {
                 {Array.from({ length: 10 }).map((_, index) => {
                   const isStamped = index < card.stamps;
                   const isLast = index === 9;
+
+                  // Simuliert den unperfekten Drehwinkel eines echten Stempels
+                  const rotations = [-8, 12, -5, 10, -12, 6, -10, 8, -6, 15];
+                  const rotation = rotations[index] || 0;
+
                   return (
                     <div
                       key={index}
                       style={{
                         aspectRatio: "1/1",
                         borderRadius: "50%",
-                        border: isStamped ? "2px solid var(--accent)" : "2px dashed var(--border)",
-                        background: isStamped ? "rgba(218,165,32,0.15)" : "transparent",
+                        border: isStamped 
+                          ? "2px solid #DAA520" 
+                          : "2px dashed var(--border)",
+                        background: isStamped 
+                          ? "rgba(218,165,32,0.12)" 
+                          : "transparent",
                         display: "flex",
                         alignItems: "center",
                         justifyContent: "center",
-                        fontSize: "1.2rem",
+                        fontSize: isStamped ? "1.3rem" : "0.95rem",
                         position: "relative",
-                        color: isStamped ? "var(--accent)" : "var(--text-muted)",
-                        fontWeight: "bold",
-                        boxShadow: isStamped ? "0 0 8px rgba(218,165,32,0.3)" : "none",
-                        transition: "all 0.3s ease",
+                        color: isStamped ? "#DAA520" : "var(--text-muted)",
+                        fontWeight: "800",
+                        boxShadow: isStamped ? "0 0 10px rgba(218,165,32,0.3)" : "none",
+                        transition: "all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+                        transform: isStamped 
+                          ? `scale(1.15) rotate(${rotation}deg)` 
+                          : "scale(1)",
                       }}
                     >
                       {isStamped ? (isLast ? "🎁" : "🥞") : index + 1}

@@ -1,1 +1,1 @@
-self.__REACT_LOADABLE_MANIFEST="{}"
+self.__REACT_LOADABLE_MANIFEST='{"src/components/LoyaltyScanner.jsx -> html5-qrcode":{"id":1514,"files":["static/chunks/7cb1fa1f.32fc9056ac653916.js","static/chunks/514.606a05edffbb39e1.js"]}}';
