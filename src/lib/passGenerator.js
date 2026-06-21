@@ -91,7 +91,7 @@ export async function generatePass({ cardId, customerName, stamps, authToken, ba
         {
           key: "stamps",
           label: "Stempel",
-          value: stamps === 10 ? "Gratis Crêpe! 🎁" : `${stamps} von 10`,
+          value: stamps === 10 ? "Gratis! 🎁" : `${stamps} von 10`,
         },
       ],
       secondaryFields: [
@@ -99,6 +99,18 @@ export async function generatePass({ cardId, customerName, stamps, authToken, ba
           key: "customerName",
           label: "", // Leerer Label-Text entfernt das Wort "KUNDE" über dem Namen
           value: customerName, // Da dies das einzige Feld in der Reihe ist, wird es von iOS deutlich größer dargestellt
+        },
+      ],
+      auxiliaryFields: [
+        {
+          key: "reward",
+          label: "BELOHNUNG",
+          value: "10. Crêpe GRATIS! 🎁",
+        },
+        {
+          key: "status",
+          label: "STATUS",
+          value: stamps === 10 ? "Einlösen! 🎁" : (stamps >= 7 ? "Fast am Ziel! 😍" : (stamps >= 4 ? "Halbzeit! 🎉" : "Sammeln 🥞")),
         },
       ],
       backFields: [
@@ -126,23 +138,25 @@ export async function generatePass({ cardId, customerName, stamps, authToken, ba
     "pass.json": passJsonBuffer,
   };
 
-  const imageFiles = ["icon.png", "logo.png", "strip.png"];
+  // Dynamische Auswahl der passenden Stempel-Grafik je nach Punktestand
+  const strip1xName = `strip_${stamps}.png`;
+  const strip2xName = `strip_${stamps}@2x.png`;
+
+  const imageFiles = [
+    { target: "icon.png", source: "icon.png" },
+    { target: "icon@2x.png", source: "icon@2x.png" },
+    { target: "logo.png", source: "logo.png" },
+    { target: "logo@2x.png", source: "logo@2x.png" },
+    { target: "strip.png", source: strip1xName },
+    { target: "strip@2x.png", source: strip2xName }
+  ];
   
-  for (const filename of imageFiles) {
-    const filePath = path.join(publicPassDir, filename);
+  for (const fileSpec of imageFiles) {
+    const filePath = path.join(publicPassDir, fileSpec.source);
     if (fs.existsSync(filePath)) {
       const fileBuffer = fs.readFileSync(filePath);
-      zip.file(filename, fileBuffer);
-      filesToHash[filename] = fileBuffer;
-
-      // Optional: @2x Versionen kopieren falls vorhanden
-      const doubleName = filename.replace(".png", "@2x.png");
-      const doublePath = path.join(publicPassDir, doubleName);
-      if (fs.existsSync(doublePath)) {
-        const doubleBuffer = fs.readFileSync(doublePath);
-        zip.file(doubleName, doubleBuffer);
-        filesToHash[doubleName] = doubleBuffer;
-      }
+      zip.file(fileSpec.target, fileBuffer);
+      filesToHash[fileSpec.target] = fileBuffer;
     }
   }
 

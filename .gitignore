@@ -31,4 +31,5 @@ db.json.tmp
 # Convex
 .convex/
 
-
+# Next.js build output
+.next/
