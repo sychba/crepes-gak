@@ -111,8 +111,9 @@ export const create = mutation({
     // Fetch all products to resolve details
     const products = await ctx.db.query("products").collect();
 
-    // Map items to nested document with price and name at order time
-    const orderItems = args.items.map((item) => {
+    // Map items to nested document with price and name at order time, flattening them
+    const orderItems = [];
+    for (const item of args.items) {
       const product = products.find((p) => p.id === item.productId);
       const basePrice = product ? product.price : 0.00;
       
@@ -124,14 +125,17 @@ export const create = mutation({
         ? ` (${item.toppings.join(", ")})`
         : "";
 
-      return {
-        productId: item.productId,
-        productName: (product ? product.name : "Unbekanntes Produkt") + toppingsLabel,
-        quantity: item.quantity,
-        priceAtOrder: basePrice + toppingsPrice,
-        toppings: item.toppings || []
-      };
-    });
+      for (let i = 0; i < item.quantity; i++) {
+        orderItems.push({
+          productId: item.productId,
+          productName: (product ? product.name : "Unbekanntes Produkt") + toppingsLabel,
+          quantity: 1, // Flattened
+          priceAtOrder: basePrice + toppingsPrice,
+          toppings: item.toppings || [],
+          status: "Neu" // Initialize item status
+        });
+      }
+    }
 
     // Generate ticket code (C-XXXX)
     const generateCode = () => {
@@ -160,21 +164,7 @@ export const create = mutation({
     }
 
     const now = Date.now();
-    const newOrderId = await ctx.db.insert("orders", {
-      id: code,
-      deviceId: args.deviceId,
-      loyaltyCardId: args.loyaltyCardId,
-      customerName: args.customerName,
-      customerClass: args.customerClass || "",
-      status: "Neu",
-      type: args.type,
-      deliveryMethod: args.deliveryMethod || "Abholung",
-      createdAt: now,
-      updatedAt: now,
-      items: orderItems,
-    });
-
-    // 4. Automatische Stempelvergabe für Crêpes bei Online-Bestellungen
+    let finalOrderItems = orderItems;
     let pushTokens = [];
     let stampsAdded = 0;
 
@@ -194,10 +184,42 @@ export const create = mutation({
           const card = await ctx.db.get(args.loyaltyCardId);
           if (card) {
             const totalStamps = card.stamps + crepeCount;
-            // Berechne redemptions (z. B. wenn man mit 9 Punkten startet und 2 kauft)
-            const redemptions = Math.floor(totalStamps / 10);
-            const remainingStamps = totalStamps % 10;
+            // Berechne Freicrêpes (jeder 5. Stempel ist gratis!)
+            const redemptions = Math.floor(totalStamps / 5);
+            const remainingStamps = totalStamps % 5;
 
+            // Wenn wir einen Freicrêpe verdient haben, ziehen wir ihn vom Preis des teuersten Crêpes ab
+            if (redemptions > 0) {
+              const crepeItems = [];
+              const nonCrepeItems = [];
+              
+              for (const item of orderItems) {
+                const product = products.find((p) => p.id === item.productId);
+                if (product && product.category === "Crepes") {
+                  for (let i = 0; i < item.quantity; i++) {
+                    crepeItems.push({
+                      ...item,
+                      quantity: 1,
+                    });
+                  }
+                } else {
+                  nonCrepeItems.push(item);
+                }
+              }
+
+              // Sortiere Crêpes nach Preis absteigend (um den teuersten gratis zu machen)
+              crepeItems.sort((a, b) => b.priceAtOrder - a.priceAtOrder);
+
+              // Wende den Rabatt auf die entsprechende Anzahl von Freicrêpes an
+              for (let i = 0; i < Math.min(redemptions, crepeItems.length); i++) {
+                crepeItems[i].priceAtOrder = 0.00;
+                crepeItems[i].productName = crepeItems[i].productName + " (Treue-Rabatt: Gratis! 🎁)";
+              }
+
+              finalOrderItems = [...crepeItems, ...nonCrepeItems];
+            }
+
+            // Aktualisiere Stempelkarte
             await ctx.db.patch(card._id, {
               stamps: remainingStamps,
               redeemedCount: card.redeemedCount + redemptions,
@@ -218,6 +240,28 @@ export const create = mutation({
         }
       }
     }
+
+    // Get the next sequential order number
+    const lastOrder = await ctx.db
+      .query("orders")
+      .order("desc")
+      .first();
+    const orderNumber = lastOrder && lastOrder.orderNumber ? lastOrder.orderNumber + 1 : 1;
+
+    const newOrderId = await ctx.db.insert("orders", {
+      id: code,
+      orderNumber,
+      deviceId: args.deviceId,
+      loyaltyCardId: args.loyaltyCardId,
+      customerName: args.customerName,
+      customerClass: args.customerClass || "",
+      status: "Neu",
+      type: args.type,
+      deliveryMethod: args.deliveryMethod || "Abholung",
+      createdAt: now,
+      updatedAt: now,
+      items: finalOrderItems,
+    });
 
     const orderDoc = await ctx.db.get(newOrderId);
     return {
@@ -424,3 +468,67 @@ export const checkActiveOrRecentOrder = query({
     return { status: "ok" };
   }
 });
+
+// Update the status of a single item within an order
+export const updateOrderItemStatus = mutation({
+  args: {
+    password: v.string(),
+    ticketCode: v.string(),
+    itemIndex: v.number(),
+    status: v.string(), // "Neu" | "Zubereitung" | "Fertig"
+  },
+  handler: async (ctx, args) => {
+    if (args.password !== "crepes2026") {
+      throw new Error("Nicht autorisiert. Falsches Passwort.");
+    }
+
+    const order = await ctx.db
+      .query("orders")
+      .withIndex("by_ticket_code", (q) => q.eq("id", args.ticketCode))
+      .unique();
+
+    if (!order) {
+      throw new Error("Bestellung nicht gefunden.");
+    }
+
+    const items = [...order.items];
+    if (args.itemIndex < 0 || args.itemIndex >= items.length) {
+      throw new Error("Ungültiger Index.");
+    }
+
+    items[args.itemIndex] = {
+      ...items[args.itemIndex],
+      status: args.status
+    };
+
+    // Calculate order's overall status based on item statuses
+    let newStatus = order.status;
+    
+    // We check all items
+    const itemStatuses = items.map(item => item.status || "Neu");
+    const allFinished = itemStatuses.every(s => s === "Fertig");
+    const anyPreparingOrFinished = itemStatuses.some(s => s === "Zubereitung" || s === "Fertig");
+
+    if (allFinished) {
+      newStatus = "Fertig";
+    } else if (anyPreparingOrFinished) {
+      newStatus = "Zubereitung";
+    } else {
+      newStatus = "Neu";
+    }
+
+    // Keep "Ausgeliefert" status if it was already checked out
+    if (order.status === "Ausgeliefert") {
+      newStatus = "Ausgeliefert";
+    }
+
+    await ctx.db.patch(order._id, {
+      items,
+      status: newStatus,
+      updatedAt: Date.now(),
+    });
+
+    return await ctx.db.get(order._id);
+  },
+});
+

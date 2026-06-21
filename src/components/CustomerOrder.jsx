@@ -52,6 +52,19 @@ export default function CustomerOrder({ navigate }) {
   const [deviceId, setDeviceId] = useState('');
   const [errorMessage, setErrorMessage] = useState(null);
   const [deliveryMethod, setDeliveryMethod] = useState('Lieferung');
+  const [loyaltyCardId, setLoyaltyCardId] = useState(null);
+
+  // Load loyalty card ID from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      setLoyaltyCardId(localStorage.getItem("crepes_loyalty_card_id"));
+    }
+  }, []);
+
+  const loyaltyCard = useQuery(
+    api.loyalty.getCard,
+    loyaltyCardId ? { cardId: loyaltyCardId } : "skip"
+  );
 
   // Customization modal states
   const [customizingProduct, setCustomizingProduct] = useState(null);
@@ -182,6 +195,45 @@ export default function CustomerOrder({ navigate }) {
       const toppingsPrice = item.toppings.length * 0.50;
       return sum + (itemBasePrice + toppingsPrice) * item.quantity;
     }, 0);
+  };
+
+  const getLoyaltyDiscount = () => {
+    if (!loyaltyCard || !products) return 0;
+    const crepeCount = cart.reduce((sum, item) => {
+      const prod = products.find((p) => p.id === item.productId);
+      if (prod && prod.category === "Crepes") {
+        return sum + item.quantity;
+      }
+      return sum;
+    }, 0);
+    
+    const totalStamps = loyaltyCard.stamps + crepeCount;
+    const freeCrepesEarned = Math.floor(totalStamps / 5);
+    if (freeCrepesEarned === 0) return 0;
+    
+    // Flatten all crepes in cart to get their individual prices
+    const crepePrices = [];
+    cart.forEach((item) => {
+      const prod = products.find((p) => p.id === item.productId);
+      if (prod && prod.category === "Crepes") {
+        const itemBasePrice = prod.price;
+        const toppingsPrice = item.toppings.length * 0.50;
+        const unitPrice = itemBasePrice + toppingsPrice;
+        for (let i = 0; i < item.quantity; i++) {
+          crepePrices.push(unitPrice);
+        }
+      }
+    });
+    
+    // Sort descending
+    crepePrices.sort((a, b) => b - a);
+    
+    // Take the sum of the free ones
+    let discount = 0;
+    for (let i = 0; i < Math.min(freeCrepesEarned, crepePrices.length); i++) {
+      discount += crepePrices[i];
+    }
+    return discount;
   };
 
   const handleCheckout = async (e) => {
@@ -545,9 +597,39 @@ export default function CustomerOrder({ navigate }) {
                 />
               </div>
 
-              <div className="cart-summary">
-                <span className="cart-total-label">Gesamtsumme:</span>
-                <span className="cart-total-value">{getCartTotal().toFixed(2)} €</span>
+              <div className="cart-summary" style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'stretch', width: '100%' }}>
+                {loyaltyCard && (
+                  <div style={{ background: "rgba(212, 175, 55, 0.08)", border: "1px solid rgba(212, 175, 55, 0.2)", padding: "0.5rem 0.75rem", borderRadius: "8px", color: "white", fontSize: "0.75rem", marginBottom: "0.5rem", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span>🥞 Stempelkarte aktiv ({loyaltyCard.stamps}/5)</span>
+                    {cart.reduce((sum, item) => {
+                      const prod = products.find((p) => p.id === item.productId);
+                      return prod && prod.category === "Crepes" ? sum + item.quantity : sum;
+                    }, 0) > 0 && (
+                      <span style={{ color: "var(--accent)", fontWeight: "600" }}>
+                        + {cart.reduce((sum, item) => {
+                          const prod = products.find((p) => p.id === item.productId);
+                          return prod && prod.category === "Crepes" ? sum + item.quantity : sum;
+                        }, 0)} Stempel
+                      </span>
+                    )}
+                  </div>
+                )}
+                {getLoyaltyDiscount() > 0 && (
+                  <>
+                    <div style={{ display: "flex", justifyContent: "space-between", color: "rgba(255,255,255,0.7)", fontSize: "0.85rem" }}>
+                      <span>Zwischensumme:</span>
+                      <span>{getCartTotal().toFixed(2)} €</span>
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", color: "var(--success)", fontSize: "0.85rem", fontWeight: "600" }}>
+                      <span>Treue-Rabatt (Gratis-Crêpe! 🎁):</span>
+                      <span>-{getLoyaltyDiscount().toFixed(2)} €</span>
+                    </div>
+                  </>
+                )}
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid var(--border)", paddingTop: "0.5rem", marginTop: "0.25rem" }}>
+                  <span className="cart-total-label" style={{ padding: 0 }}>Gesamtsumme:</span>
+                  <span className="cart-total-value">{(getCartTotal() - getLoyaltyDiscount()).toFixed(2)} €</span>
+                </div>
               </div>
 
               <button

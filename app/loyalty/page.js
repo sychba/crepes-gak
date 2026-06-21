@@ -115,7 +115,7 @@ export default function LoyaltyPage() {
         <div className="login-icon">🥞</div>
         <h2 className="login-title">Crêpes GAK Club</h2>
         <p style={{ fontSize: "0.85rem", color: "var(--text-secondary)", marginBottom: "1.5rem", textAlign: "center" }}>
-          Sammle Stempel bei jedem Kauf! Für jeden Crêpe gibt es einen Stempel. Nach 10 Stempeln erhältst du dein Gratis-Crêpe!
+          Sammle Stempel bei jedem Kauf! Für jeden Crêpe gibt es einen Stempel. Nach 5 Stempeln erhältst du dein Gratis-Crêpe!
         </p>
 
         {error && <div className="alert alert-error">{error}</div>}
@@ -161,7 +161,7 @@ export default function LoyaltyPage() {
   }
 
   // 3. PASS DASHBOARD
-  const isCardFull = card.stamps === 10;
+  const isCardFull = card.stamps === 5;
 
   return (
     <div style={{ maxWidth: "480px", margin: "2rem auto", padding: "0 1rem" }}>
@@ -223,7 +223,7 @@ export default function LoyaltyPage() {
             Stempel bis zu der nächsten Belohnung:
           </div>
           <div style={{ fontWeight: "600", fontSize: "1.3rem", color: "white" }}>
-            {card.stamps}/10
+            {card.stamps}/5
           </div>
         </div>
 

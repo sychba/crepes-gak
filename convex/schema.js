@@ -13,6 +13,7 @@ export default defineSchema({
 
   orders: defineTable({
     id: v.string(), // E.g. "C-X39B" (ticket code)
+    orderNumber: v.optional(v.number()), // Sequential order number
     deviceId: v.optional(v.string()), // Device tracking identifier
     loyaltyCardId: v.optional(v.string()), // Linked loyalty card ID for automatic stamps
     customerName: v.string(),
@@ -29,6 +30,7 @@ export default defineSchema({
         quantity: v.number(),
         priceAtOrder: v.number(),
         toppings: v.optional(v.array(v.string())), // Array of selected toppings
+        status: v.optional(v.string()), // "Neu" | "Zubereitung" | "Fertig"
       })
     ),
   })
