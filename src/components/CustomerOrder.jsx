@@ -323,6 +323,37 @@ export default function CustomerOrder({ navigate }) {
   }, {});
 
   const cartCount = getCartCount();
+  const isShopClosed = true;
+
+  if (isShopClosed) {
+    return (
+      <div className="main-content" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh', padding: '2rem' }}>
+        <div className="login-container" style={{ 
+          maxWidth: '500px', 
+          width: '100%', 
+          textAlign: 'center', 
+          padding: '3rem 2rem', 
+          borderRadius: '24px', 
+          border: '1px solid var(--border-color)',
+          background: 'rgba(255, 255, 255, 0.03)',
+          backdropFilter: 'blur(10px)',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
+          animation: 'bounce-in 0.4s ease-out'
+        }}>
+          <span style={{ fontSize: '4.5rem', display: 'block', marginBottom: '1.5rem', filter: 'drop-shadow(0 0 10px rgba(245, 158, 11, 0.2))' }}>🥞✨</span>
+          <h2 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', fontWeight: 800, marginBottom: '1rem', color: 'var(--text-primary)' }}>
+            Online-Shop geschlossen
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', lineHeight: '1.6', marginBottom: '2rem' }}>
+            Bestellungen über die Website gehen wieder ab <strong style={{ color: 'var(--accent)' }}>Mittwoch, 24. Juni um 08:30 Uhr</strong>.
+          </p>
+          <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', borderTop: '1px solid var(--border-color)', paddingTop: '1.5rem' }}>
+            Vielen Dank für deinen Besuch und bis Mittwoch! ➔ 🍎🧇
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="main-content">
