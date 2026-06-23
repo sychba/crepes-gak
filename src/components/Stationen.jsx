@@ -191,7 +191,9 @@ export default function Stationen({ token }) {
   const getTasks = () => {
     if (!orders || !products || !selectedStation) return [];
 
-    const activeOrders = orders.filter(o => o.status !== "Ausgeliefert");
+    // Only show active tasks from the last 3 hours to filter out stale/forgotten orders
+    const threeHoursAgo = Date.now() - 3 * 60 * 60 * 1000;
+    const activeOrders = orders.filter(o => o.status !== "Ausgeliefert" && o.createdAt >= threeHoursAgo);
     const list = [];
 
     for (const order of activeOrders) {

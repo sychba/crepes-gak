@@ -235,11 +235,14 @@ export default function Kueche({ token }) {
     );
   }
 
-  // Filter columns
-  const ordersNeu = orders.filter(o => o.status === 'Neu');
-  const ordersPrep = orders.filter(o => o.status === 'Zubereitung');
-  const ordersReady = orders.filter(o => o.status === 'Fertig');
-  const ordersDone = orders.filter(o => o.status === 'Ausgeliefert');
+  // Filter columns (only show orders from the last 3 hours to keep the kitchen board clean and exclude stale test orders)
+  const threeHoursAgo = Date.now() - 3 * 60 * 60 * 1000;
+  const recentOrders = orders.filter(o => o.createdAt >= threeHoursAgo);
+
+  const ordersNeu = recentOrders.filter(o => o.status === 'Neu');
+  const ordersPrep = recentOrders.filter(o => o.status === 'Zubereitung');
+  const ordersReady = recentOrders.filter(o => o.status === 'Fertig');
+  const ordersDone = recentOrders.filter(o => o.status === 'Ausgeliefert');
 
   return (
     <div>

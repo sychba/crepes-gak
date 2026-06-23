@@ -647,20 +647,16 @@ export const releaseStaleTasks = mutation({
     const now = Date.now();
     const threshold = now - 20000; // 20 seconds stale threshold
 
-    // Get all stale devices
-    const staleDevices = await ctx.db
+    // Get all devices and filter active device IDs
+    const devices = await ctx.db
       .query("activeDevices")
       .collect();
     
-    const staleDeviceIds = staleDevices
-      .filter((d) => d.lastSeen < threshold)
+    const activeDeviceIds = devices
+      .filter((d) => d.lastSeen >= threshold)
       .map((d) => d.deviceId);
 
-    if (staleDeviceIds.length === 0) {
-      return { releasedCount: 0 };
-    }
-
-    // Get all active orders (Neu, Zubereitung, Fertig)
+    // Get all orders
     const activeOrders = await ctx.db
       .query("orders")
       .collect();
@@ -670,7 +666,7 @@ export const releaseStaleTasks = mutation({
     for (const order of activeOrders) {
       let orderModified = false;
       const updatedItems = order.items.map((item) => {
-        if (item.assignedTo && staleDeviceIds.includes(item.assignedTo)) {
+        if (item.assignedTo && !activeDeviceIds.includes(item.assignedTo)) {
           orderModified = true;
           releasedCount++;
           return {
@@ -710,7 +706,7 @@ export const releaseStaleTasks = mutation({
     }
 
     // Delete stale devices from activeDevices table
-    const staleDeviceDocs = staleDevices.filter((d) => d.lastSeen < threshold);
+    const staleDeviceDocs = devices.filter((d) => d.lastSeen < threshold);
     for (const doc of staleDeviceDocs) {
       await ctx.db.delete(doc._id);
     }
