@@ -6,6 +6,7 @@ const AVAILABLE_TOPPINGS = [
   'Puderzucker',
   'Zimt-Zucker',
   'Nutella',
+  'Apfelmus',
   'Käse',
   'Schinken'
 ];
@@ -14,6 +15,7 @@ const getDefaultToppingsForProduct = (productId) => {
   if (productId.includes('nutella')) return ['Nutella'];
   if (productId.includes('zimt-zucker')) return ['Zimt-Zucker'];
   if (productId.includes('puderzucker')) return ['Puderzucker'];
+  if (productId.includes('apfelmus')) return ['Apfelmus'];
   if (productId.includes('kaese-schinken')) return ['Käse', 'Schinken'];
   return [];
 };
@@ -46,6 +48,7 @@ export default function Kasse({ token }) {
   const [cart, setCart] = useState([]); // Array: [{ cartId, productId, quantity, toppings }]
   const [customerName, setCustomerName] = useState('');
   const [customerClass, setCustomerClass] = useState('');
+  const [deliveryMethod, setDeliveryMethod] = useState('Abholung');
   const [submitting, setSubmitting] = useState(false);
   const [successOrder, setSuccessOrder] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
@@ -180,6 +183,7 @@ export default function Kasse({ token }) {
     setCart([]);
     setCustomerName('');
     setCustomerClass('');
+    setDeliveryMethod('Abholung');
   };
 
   const getCartTotal = () => {
@@ -225,6 +229,7 @@ export default function Kasse({ token }) {
         customerName: customerName.trim() + ' (Vor Ort)',
         customerClass: customerClass.trim(),
         type: 'kasse',
+        deliveryMethod,
         items,
       });
 
@@ -428,6 +433,28 @@ export default function Kasse({ token }) {
                 value={customerClass}
                 onChange={(e) => setCustomerClass(e.target.value)}
               />
+            </div>
+
+            <div className="form-group">
+              <label>Lieferart</label>
+              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem', marginBottom: '0.25rem' }}>
+                <button
+                  type="button"
+                  className={`btn ${deliveryMethod === 'Abholung' ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ flex: 1, padding: '0.5rem', fontSize: '0.8rem', fontWeight: 'bold' }}
+                  onClick={() => setDeliveryMethod('Abholung')}
+                >
+                  🚶 Abholung
+                </button>
+                <button
+                  type="button"
+                  className={`btn ${deliveryMethod === 'Lieferung' ? 'btn-primary' : 'btn-secondary'}`}
+                  style={{ flex: 1, padding: '0.5rem', fontSize: '0.8rem', fontWeight: 'bold' }}
+                  onClick={() => setDeliveryMethod('Lieferung')}
+                >
+                  🚗 Lieferung
+                </button>
+              </div>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '0.5rem', fontSize: '1.05rem' }}>

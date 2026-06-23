@@ -31,8 +31,8 @@ export const seed = mutation({
       { id: 'crepe-nutella', name: 'Crepe Nutella', price: 2.50, category: 'Crepes', description: 'Mit leckerem original Nutella-Aufstrich.', available: true },
       { id: 'crepe-zimt-zucker', name: 'Crepe Zimt & Zucker', price: 2.50, category: 'Crepes', description: 'Der Klassiker mit Zimt und feinem Zucker.', available: true },
       { id: 'crepe-puderzucker', name: 'Crepe Puderzucker', price: 2.50, category: 'Crepes', description: 'Mit feinem Puderzucker bestäubt.', available: true },
-      { id: 'crepe-kaese-schinken', name: 'Crepe Käse & Schinken', price: 3.00, category: 'Crepes', description: 'Herzhafter Crepe mit geschmolzenem Käse und saftigem Schinken.', available: true },
       { id: 'crepe-apfelmus', name: 'Crepe Apfelmus', price: 2.50, category: 'Crepes', description: 'Frisch gebackener Crepe mit feinem Apfelmus-Aufstrich.', available: true },
+      { id: 'crepe-kaese-schinken', name: 'Crepe Käse & Schinken', price: 3.00, category: 'Crepes', description: 'Herzhafter Crepe mit geschmolzenem Käse und saftigem Schinken.', available: true },
 
       // Waffeln
       { id: 'waffel-plain', name: 'Waffel Naturell', price: 2.00, category: 'Waffeln', description: 'Frische warme Herzwaffel ohne Toppings – bereit zum selbst Gestalten mit deinen Wunsch-Toppings.', available: true },
