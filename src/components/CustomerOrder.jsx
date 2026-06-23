@@ -321,9 +321,6 @@ export default function CustomerOrder({ navigate }) {
   }, {});
 
   const cartCount = getCartCount();
-  const nonWaterCount = cart.reduce((sum, item) => {
-    return item.productId !== 'drink-wasser' ? sum + item.quantity : sum;
-  }, 0);
 
   return (
     <div className="main-content">
@@ -540,10 +537,10 @@ export default function CustomerOrder({ navigate }) {
 
             <form onSubmit={handleCheckout} className="cart-checkout-form">
               {/* Product Limit Warning */}
-              {nonWaterCount > 10 && (
+              {cartCount > 10 && (
                 <div className="alert alert-error" style={{ fontSize: '0.85rem', padding: '0.75rem', marginBottom: '0.5rem', lineHeight: '1.4' }}>
                   ⚠️ Für Bestellungen über 10 Produkte bestelle bitte direkt vor Ort an der Kasse.
-                  (Aktuell im Warenkorb: <strong>{nonWaterCount} Produkte</strong>. Wasser ist unbegrenzt).
+                  (Aktuell im Warenkorb: <strong>{cartCount} Produkte</strong>).
                 </div>
               )}
 
@@ -635,7 +632,7 @@ export default function CustomerOrder({ navigate }) {
               <button
                 type="submit"
                 className="btn btn-primary"
-                disabled={submitting || nonWaterCount > 10 || cooldown > 0 || !!activeOrderTicket}
+                disabled={submitting || cartCount > 10 || cooldown > 0 || !!activeOrderTicket}
                 style={{ width: '100%', padding: '1rem', marginTop: '0.5rem' }}
               >
                 {submitting ? 'Bestellung wird gesendet...' : 'Kostenpflichtig bestellen'}

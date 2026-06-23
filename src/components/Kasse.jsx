@@ -30,7 +30,7 @@ const getFriendlyErrorMessage = (rawError) => {
     return 'Bestell-Limit erreicht. Du kannst maximal 2 Bestellungen pro Stunde aufgeben.';
   }
   if (msg.includes('Maximal 10 Produkte') || msg.includes('10 Produkte pro Bestellung erlaubt')) {
-    return 'Maximal 10 Produkte pro Bestellung erlaubt (Wasser ist unbegrenzt).';
+    return 'Maximal 10 Produkte pro Bestellung erlaubt.';
   }
   if (msg.includes('Validator') || msg.includes('ArgumentValidationError') || msg.includes('extra field')) {
     return 'Server-Konfigurationsfehler: Bitte stelle sicher, dass das neueste Convex-Schema deployed ist (npx convex deploy).';

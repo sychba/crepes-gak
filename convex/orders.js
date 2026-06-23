@@ -99,11 +99,9 @@ export const create = mutation({
         throw new Error("Du hast bereits online bestellt. Für weitere Bestellungen bestelle bitte direkt vor Ort an der Kasse (Limit: 1 Online-Bestellung pro Stunde).");
       }
 
-      // 3. Enforce maximum 10 non-water items per order for online orders
-      const nonWaterQty = args.items.reduce((sum, item) => {
-        return item.productId !== 'drink-wasser' ? sum + item.quantity : sum;
-      }, 0);
-      if (nonWaterQty > 10) {
+      // 3. Enforce maximum 10 items per order for online orders
+      const totalQty = args.items.reduce((sum, item) => sum + item.quantity, 0);
+      if (totalQty > 10) {
         throw new Error("Maximal 10 Produkte pro Online-Bestellung erlaubt. Für größere Bestellungen bestelle bitte direkt vor Ort an der Kasse.");
       }
     }

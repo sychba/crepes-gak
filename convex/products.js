@@ -42,11 +42,7 @@ export const seed = mutation({
       // Sandwiches
       { id: 'sandwich-cheese', name: 'Käse Sandwich', price: 2.50, category: 'Sandwiches', description: 'Knusprig getoastetes Sandwich mit viel geschmolzenem Käse.', available: true },
       { id: 'sandwich-ham', name: 'Schinken Sandwich', price: 2.50, category: 'Sandwiches', description: 'Knusprig getoastetes Sandwich mit saftigem Schinken.', available: true },
-      { id: 'sandwich-cheese-ham', name: 'Käse-Schinken Sandwich', price: 3.00, category: 'Sandwiches', description: 'Knusprig getoastetes Sandwich mit viel geschmolzenem Käse und saftigem Schinken.', available: true },
-
-      // Getränke
-      { id: 'drink-fritz-kola', name: 'Fritz-Kola 0.33l', price: 2.00, category: 'Getränke', description: 'Eiskalte Fritz-Kola für den Koffeinkick.', available: true },
-      { id: 'drink-wasser', name: 'Wasser 0.5l', price: 1.50, category: 'Getränke', description: 'Spritziges oder stilles Mineralwasser.', available: true }
+      { id: 'sandwich-cheese-ham', name: 'Käse-Schinken Sandwich', price: 3.00, category: 'Sandwiches', description: 'Knusprig getoastetes Sandwich mit viel geschmolzenem Käse und saftigem Schinken.', available: true }
     ];
 
     for (const prod of defaultProducts) {
