@@ -281,7 +281,11 @@ export default function Stationen({ token }) {
       })
       .catch(err => {
         console.warn("Could not claim task:", err);
-        setClaimError(err.message || String(err));
+        const msg = err.message || String(err);
+        // Silently ignore race conditions where another iPad claimed this item first
+        if (!msg.includes("bereits an einer anderen Station")) {
+          setClaimError(msg);
+        }
       })
       .finally(() => {
         isClaimingRef.current = false;
