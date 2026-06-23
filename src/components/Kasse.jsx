@@ -72,12 +72,14 @@ export default function Kasse({ token }) {
         const hasPuder = item.toppings.includes('Puderzucker');
         const hasCheese = item.toppings.includes('Käse');
         const hasHam = item.toppings.includes('Schinken');
+        const hasApfelmus = item.toppings.includes('Apfelmus');
         
         if (productId === 'crepe-plain' && item.toppings.length === 0) return sum + item.quantity;
-        if (productId === 'crepe-nutella' && hasNutella && !hasCheese && !hasHam) return sum + item.quantity;
+        if (productId === 'crepe-nutella' && hasNutella && !hasCheese && !hasHam && !hasApfelmus) return sum + item.quantity;
         if (productId === 'crepe-zimt-zucker' && hasZimt) return sum + item.quantity;
         if (productId === 'crepe-puderzucker' && hasPuder) return sum + item.quantity;
         if (productId === 'crepe-kaese-schinken' && hasCheese && hasHam) return sum + item.quantity;
+        if (productId === 'crepe-apfelmus' && hasApfelmus && !hasCheese && !hasHam && !hasNutella) return sum + item.quantity;
       }
       
       // Base Waffeln in cart mapped to their preset UI products
@@ -85,11 +87,13 @@ export default function Kasse({ token }) {
         const hasNutella = item.toppings.includes('Nutella');
         const hasZimt = item.toppings.includes('Zimt-Zucker');
         const hasPuder = item.toppings.includes('Puderzucker');
+        const hasApfelmus = item.toppings.includes('Apfelmus');
         
         if (productId === 'waffel-plain' && item.toppings.length === 0) return sum + item.quantity;
-        if (productId === 'waffel-nutella' && hasNutella) return sum + item.quantity;
+        if (productId === 'waffel-nutella' && hasNutella && !hasApfelmus) return sum + item.quantity;
         if (productId === 'waffel-zimt-zucker' && hasZimt) return sum + item.quantity;
         if (productId === 'waffel-puderzucker' && hasPuder) return sum + item.quantity;
+        if (productId === 'waffel-apfelmus' && hasApfelmus && !hasNutella) return sum + item.quantity;
       }
       
       return sum;
@@ -199,11 +203,6 @@ export default function Kasse({ token }) {
 
   const handleCheckout = async (e) => {
     e.preventDefault();
-    if (!customerName.trim()) {
-      setErrorMessage('Bitte gib einen Kundennamen ein.');
-      return;
-    }
-
     if (cart.length === 0) {
       setErrorMessage('Der Warenkorb ist leer.');
       return;
@@ -224,9 +223,11 @@ export default function Kasse({ token }) {
         toppings: item.toppings
       }));
 
+      const finalName = customerName.trim() || 'Kunde';
+
       const order = await createOrder({
         deviceId: 'kasse_terminal',
-        customerName: customerName.trim() + ' (Vor Ort)',
+        customerName: finalName + ' (Vor Ort)',
         customerClass: customerClass.trim(),
         type: 'kasse',
         deliveryMethod,
@@ -413,14 +414,13 @@ export default function Kasse({ token }) {
 
           <form onSubmit={handleCheckout} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <div className="form-group">
-              <label>Kundenname *</label>
+              <label>Kundenname</label>
               <input
                 type="text"
                 className="form-input"
-                placeholder="z.B. Jakob F."
+                placeholder="z.B. Jakob F. (optional)"
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
-                required
               />
             </div>
             
@@ -503,7 +503,7 @@ export default function Kasse({ token }) {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1.5rem' }}>
               {(customizingProduct.category === 'Waffeln' 
-                ? ['Puderzucker', 'Zimt-Zucker', 'Nutella'] 
+                ? ['Puderzucker', 'Zimt-Zucker', 'Nutella', 'Apfelmus'] 
                 : AVAILABLE_TOPPINGS
               ).map(topping => {
                 const isSelected = selectedToppings.includes(topping);
