@@ -45,8 +45,7 @@ export const seed = mutation({
       { id: 'sandwich-cheese', name: 'Käse Sandwich', price: 2.50, category: 'Sandwiches', description: 'Knusprig getoastetes Sandwich mit viel geschmolzenem Käse.', available: true },
       { id: 'sandwich-ham', name: 'Schinken Sandwich', price: 2.50, category: 'Sandwiches', description: 'Knusprig getoastetes Sandwich mit saftigem Schinken.', available: true },
       { id: 'sandwich-cheese-ham', name: 'Käse-Schinken Sandwich', price: 3.00, category: 'Sandwiches', description: 'Knusprig getoastetes Sandwich mit viel geschmolzenem Käse und saftigem Schinken.', available: true },
-      { id: 'sandwich-schoko', name: 'Schoko Sandwich', price: 2.50, category: 'Sandwiches', description: 'Knusprig getoastetes Sandwich gefüllt mit cremigem Nutella.', available: true },
-      { id: 'sandwich-schoko-banane', name: 'Schoko-Banane Sandwich', price: 3.00, category: 'Sandwiches', description: 'Knusprig getoastetes Sandwich mit warmem Nutella und süßen Bananenscheiben.', available: true }
+      { id: 'sandwich-schoko', name: 'Schoko Sandwich', price: 2.50, category: 'Sandwiches', description: 'Knusprig getoastetes Sandwich gefüllt mit cremigem Nutella.', available: true }
     ];
 
     for (const prod of defaultProducts) {
