@@ -6,6 +6,7 @@ const AVAILABLE_TOPPINGS = [
   'Puderzucker',
   'Zimt-Zucker',
   'Nutella',
+  'Apfelmus',
   'Käse',
   'Schinken'
 ];
@@ -14,6 +15,7 @@ const getDefaultToppingsForProduct = (productId) => {
   if (productId.includes('nutella')) return ['Nutella'];
   if (productId.includes('zimt-zucker')) return ['Zimt-Zucker'];
   if (productId.includes('puderzucker')) return ['Puderzucker'];
+  if (productId.includes('apfelmus')) return ['Apfelmus'];
   if (productId.includes('kaese-schinken')) return ['Käse', 'Schinken'];
   return [];
 };
