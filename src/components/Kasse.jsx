@@ -277,7 +277,7 @@ export default function Kasse({ token }) {
       {successOrder && (
         <div className="alert alert-success" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
           <div>
-            <strong>Bestellung gebucht! Ticket-ID: {successOrder.id}</strong> ({successOrder.customerName})
+            <strong>Bestellung gebucht! Bestellnummer: #{successOrder.orderNumber || successOrder.id}</strong> ({successOrder.customerName})
           </div>
           <a href={`/order/${successOrder.id}`} target="_blank" rel="noreferrer" style={{ color: '#fff', textDecoration: 'underline', fontWeight: 600 }}>
             Beleg öffnen ↗
