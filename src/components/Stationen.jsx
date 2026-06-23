@@ -31,6 +31,9 @@ export default function Stationen({ token }) {
   const products = useQuery(api.products.list);
   const updateItemStatus = useMutation(api.orders.updateOrderItemStatus);
   const claimOrderItem = useMutation(api.orders.claimOrderItem);
+  const heartbeat = useMutation(api.orders.heartbeat);
+  const releaseStaleTasks = useMutation(api.orders.releaseStaleTasks);
+  const releaseDeviceTasks = useMutation(api.orders.releaseDeviceTasks);
 
   const [claimError, setClaimError] = useState(null);
   const [showDebug, setShowDebug] = useState(false);
@@ -49,6 +52,31 @@ export default function Stationen({ token }) {
       setDeviceId(id);
     }
   }, []);
+
+  // Periodically send heartbeat and trigger release of stale tasks
+  useEffect(() => {
+    if (!selectedStation || !deviceId) return;
+
+    // Send heartbeat immediately on mount/change
+    heartbeat({ deviceId, station: selectedStation }).catch(err => console.error("Heartbeat failed:", err));
+
+    // Start interval for heartbeat (every 5 seconds)
+    const heartbeatInterval = setInterval(() => {
+      heartbeat({ deviceId, station: selectedStation }).catch(err => console.error("Heartbeat failed:", err));
+    }, 5000);
+
+    // Start interval to clean up stale tasks (every 10 seconds)
+    const cleanupInterval = setInterval(() => {
+      releaseStaleTasks({ password: token }).catch(err => console.error("Stale cleanup failed:", err));
+    }, 10000);
+
+    // Cleanup: Release device tasks immediately when switching stations or unmounting
+    return () => {
+      clearInterval(heartbeatInterval);
+      clearInterval(cleanupInterval);
+      releaseDeviceTasks({ password: token, deviceId }).catch(err => console.error("Exit release failed:", err));
+    };
+  }, [selectedStation, deviceId, token]);
 
   // Sync sound setting and enable Web Audio context
   useEffect(() => {

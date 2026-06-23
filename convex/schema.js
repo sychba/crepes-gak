@@ -62,5 +62,11 @@ export default defineSchema({
   })
     .index("by_serial", ["serialNumber"])
     .index("by_device_and_serial", ["deviceLibraryIdentifier", "serialNumber"])
-    .index("by_device", ["deviceLibraryIdentifier"])
+    .index("by_device", ["deviceLibraryIdentifier"]),
+
+  activeDevices: defineTable({
+    deviceId: v.string(),
+    lastSeen: v.number(),
+    station: v.string(),
+  }).index("by_device", ["deviceId"]),
 });

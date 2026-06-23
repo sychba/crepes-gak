@@ -21,14 +21,21 @@ export default function Dashboard({ token }) {
   const orders = useQuery(api.orders.listAll, { password: token });
   const updateStatus = useMutation(api.orders.updateStatus);
   const deleteOrder = useMutation(api.orders.deleteOrder);
+  const releaseStaleTasks = useMutation(api.orders.releaseStaleTasks);
 
   const prevOrdersRef = useRef([]);
   const isFirstLoadRef = useRef(true);
   const [audioEnabled, setAudioEnabled] = useState(false);
   const [deleteConfirmOrder, setDeleteConfirmOrder] = useState(null);
 
-  // Sync sound settings
+  // Sync sound settings and run stale tasks cleanup
   useEffect(() => {
+    // Run stale tasks cleanup immediately and then every 10 seconds
+    releaseStaleTasks({ password: token }).catch(err => console.warn(err));
+    const cleanupInterval = setInterval(() => {
+      releaseStaleTasks({ password: token }).catch(err => console.warn(err));
+    }, 10000);
+
     const checkState = () => {
       if (window.sharedAudioContext && window.sharedAudioContext.state === 'running') {
         setAudioEnabled(true);
@@ -37,9 +44,13 @@ export default function Dashboard({ token }) {
       }
     };
     checkState();
-    const interval = setInterval(checkState, 1000);
-    return () => clearInterval(interval);
-  }, []);
+    const soundInterval = setInterval(checkState, 1000);
+
+    return () => {
+      clearInterval(cleanupInterval);
+      clearInterval(soundInterval);
+    };
+  }, [token]);
 
   const initAudio = () => {
     try {

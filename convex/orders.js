@@ -607,4 +607,185 @@ export const claimOrderItem = mutation({
   },
 });
 
+// Send iPad device heartbeat to keep it active
+export const heartbeat = mutation({
+  args: {
+    deviceId: v.string(),
+    station: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const existing = await ctx.db
+      .query("activeDevices")
+      .withIndex("by_device", (q) => q.eq("deviceId", args.deviceId))
+      .unique();
+
+    const now = Date.now();
+    if (existing) {
+      await ctx.db.patch(existing._id, {
+        lastSeen: now,
+        station: args.station,
+      });
+    } else {
+      await ctx.db.insert("activeDevices", {
+        deviceId: args.deviceId,
+        station: args.station,
+        lastSeen: now,
+      });
+    }
+    return { success: true };
+  },
+});
+
+// Remove offline iPads (>20s stale) and release their tasks back to queue
+export const releaseStaleTasks = mutation({
+  args: { password: v.string() },
+  handler: async (ctx, args) => {
+    if (args.password !== "crepes2026") {
+      throw new Error("Nicht autorisiert.");
+    }
+
+    const now = Date.now();
+    const threshold = now - 20000; // 20 seconds stale threshold
+
+    // Get all stale devices
+    const staleDevices = await ctx.db
+      .query("activeDevices")
+      .collect();
+    
+    const staleDeviceIds = staleDevices
+      .filter((d) => d.lastSeen < threshold)
+      .map((d) => d.deviceId);
+
+    if (staleDeviceIds.length === 0) {
+      return { releasedCount: 0 };
+    }
+
+    // Get all active orders (Neu, Zubereitung, Fertig)
+    const activeOrders = await ctx.db
+      .query("orders")
+      .collect();
+    
+    let releasedCount = 0;
+
+    for (const order of activeOrders) {
+      let orderModified = false;
+      const updatedItems = order.items.map((item) => {
+        if (item.assignedTo && staleDeviceIds.includes(item.assignedTo)) {
+          orderModified = true;
+          releasedCount++;
+          return {
+            ...item,
+            status: "Neu", // Reset item back to queue
+            assignedTo: undefined, // Clear assignment
+          };
+        }
+        return item;
+      });
+
+      if (orderModified) {
+        // Recalculate order's overall status based on item statuses
+        let newStatus = order.status;
+        const itemStatuses = updatedItems.map((item) => item.status || "Neu");
+        const allFinished = itemStatuses.every((s) => s === "Fertig");
+        const anyPreparingOrFinished = itemStatuses.some((s) => s === "Zubereitung" || s === "Fertig");
+
+        if (allFinished) {
+          newStatus = "Fertig";
+        } else if (anyPreparingOrFinished) {
+          newStatus = "Zubereitung";
+        } else {
+          newStatus = "Neu";
+        }
+
+        if (order.status === "Ausgeliefert") {
+          newStatus = "Ausgeliefert";
+        }
+
+        await ctx.db.patch(order._id, {
+          items: updatedItems,
+          status: newStatus,
+          updatedAt: now,
+        });
+      }
+    }
+
+    // Delete stale devices from activeDevices table
+    const staleDeviceDocs = staleDevices.filter((d) => d.lastSeen < threshold);
+    for (const doc of staleDeviceDocs) {
+      await ctx.db.delete(doc._id);
+    }
+
+    return { releasedCount };
+  },
+});
+
+// Release all tasks assigned to a specific device immediately (e.g. on exit)
+export const releaseDeviceTasks = mutation({
+  args: {
+    password: v.string(),
+    deviceId: v.string(),
+  },
+  handler: async (ctx, args) => {
+    if (args.password !== "crepes2026") {
+      throw new Error("Nicht autorisiert.");
+    }
+
+    const now = Date.now();
+    const activeOrders = await ctx.db.query("orders").collect();
+    let releasedCount = 0;
+
+    for (const order of activeOrders) {
+      let orderModified = false;
+      const updatedItems = order.items.map((item) => {
+        if (item.assignedTo === args.deviceId) {
+          orderModified = true;
+          releasedCount++;
+          return {
+            ...item,
+            status: "Neu",
+            assignedTo: undefined,
+          };
+        }
+        return item;
+      });
+
+      if (orderModified) {
+        let newStatus = order.status;
+        const itemStatuses = updatedItems.map((item) => item.status || "Neu");
+        const allFinished = itemStatuses.every((s) => s === "Fertig");
+        const anyPreparingOrFinished = itemStatuses.some((s) => s === "Zubereitung" || s === "Fertig");
+
+        if (allFinished) {
+          newStatus = "Fertig";
+        } else if (anyPreparingOrFinished) {
+          newStatus = "Zubereitung";
+        } else {
+          newStatus = "Neu";
+        }
+
+        if (order.status === "Ausgeliefert") {
+          newStatus = "Ausgeliefert";
+        }
+
+        await ctx.db.patch(order._id, {
+          items: updatedItems,
+          status: newStatus,
+          updatedAt: now,
+        });
+      }
+    }
+
+    // Delete device from activeDevices table
+    const existing = await ctx.db
+      .query("activeDevices")
+      .withIndex("by_device", (q) => q.eq("deviceId", args.deviceId))
+      .unique();
+    if (existing) {
+      await ctx.db.delete(existing._id);
+    }
+
+    return { releasedCount };
+  },
+});
+
 
