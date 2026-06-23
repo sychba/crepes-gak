@@ -235,9 +235,9 @@ export default function Kueche({ token }) {
     );
   }
 
-  // Filter columns (only show orders from the last 3 hours to keep the kitchen board clean and exclude stale test orders)
-  const threeHoursAgo = Date.now() - 3 * 60 * 60 * 1000;
-  const recentOrders = orders.filter(o => o.createdAt >= threeHoursAgo);
+  // Filter columns (only show orders from the last 45 minutes to keep the kitchen board clean and exclude stale test orders)
+  const fortyFiveMinutesAgo = Date.now() - 45 * 60 * 1000;
+  const recentOrders = orders.filter(o => o.createdAt >= fortyFiveMinutesAgo);
 
   const ordersNeu = recentOrders.filter(o => o.status === 'Neu');
   const ordersPrep = recentOrders.filter(o => o.status === 'Zubereitung');

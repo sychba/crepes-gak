@@ -784,4 +784,32 @@ export const releaseDeviceTasks = mutation({
   },
 });
 
+export const completeOldOrders = mutation({
+  args: { password: v.string(), minutes: v.number() },
+  handler: async (ctx, args) => {
+    if (args.password !== "crepes2026") {
+      throw new Error("Nicht autorisiert. Falsches Passwort.");
+    }
+    const threshold = Date.now() - args.minutes * 60 * 1000;
+    const allOrders = await ctx.db.query("orders").collect();
+    
+    let count = 0;
+    for (const order of allOrders) {
+      if (order.createdAt < threshold && order.status !== "Ausgeliefert") {
+        const updatedItems = order.items.map(item => ({
+          ...item,
+          status: "Fertig"
+        }));
+        await ctx.db.patch(order._id, {
+          status: "Ausgeliefert",
+          items: updatedItems,
+          updatedAt: Date.now()
+        });
+        count++;
+      }
+    }
+    return { success: true, count };
+  }
+});
+
 

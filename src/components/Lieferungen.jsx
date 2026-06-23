@@ -156,9 +156,9 @@ export default function Lieferungen({ token }) {
     );
   }
 
-  // Filter only delivery orders from the last 3 hours to keep the view clean
-  const threeHoursAgo = Date.now() - 3 * 60 * 60 * 1000;
-  const deliveryOrders = orders.filter(o => o.deliveryMethod === 'Lieferung' && o.createdAt >= threeHoursAgo);
+  // Filter only delivery orders from the last 45 minutes to keep the view clean
+  const fortyFiveMinutesAgo = Date.now() - 45 * 60 * 1000;
+  const deliveryOrders = orders.filter(o => o.deliveryMethod === 'Lieferung' && o.createdAt >= fortyFiveMinutesAgo);
 
   // Categorize delivery orders
   const readyDeliveries = deliveryOrders.filter(o => o.status === 'Fertig');
