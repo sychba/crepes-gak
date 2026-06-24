@@ -323,7 +323,7 @@ export default function CustomerOrder({ navigate }) {
   }, {});
 
   const cartCount = getCartCount();
-  const isShopClosed = false;
+  const isShopClosed = true;
 
   if (isShopClosed) {
     return (
@@ -345,10 +345,10 @@ export default function CustomerOrder({ navigate }) {
             Online-Shop geschlossen
           </h2>
           <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', lineHeight: '1.6', marginBottom: '2rem' }}>
-            Bestellungen über die Website gehen wieder ab <strong style={{ color: 'var(--accent)' }}>Mittwoch, 24. Juni um 08:30 Uhr</strong>.
+            Bestellungen über die Website sind zurzeit deaktiviert. Bitte bestelle direkt vor Ort an der Kasse.
           </p>
           <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', borderTop: '1px solid var(--border-color)', paddingTop: '1.5rem' }}>
-            Vielen Dank für deinen Besuch und bis Mittwoch! ➔ 🍎🧇
+            Vielen Dank für deinen Besuch! ➔ 🥞🧇
           </div>
         </div>
       </div>

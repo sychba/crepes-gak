@@ -80,6 +80,7 @@ export const create = mutation({
 
     // 2. For online orders, enforce active order check and anti-spam limit (max 1 order per hour)
     if (args.type === 'online') {
+      throw new Error("Der Online-Shop ist zurzeit geschlossen. Bitte bestelle direkt vor Ort an der Kasse.");
       const deviceOrders = await ctx.db
         .query("orders")
         .withIndex("by_device", (q) => q.eq("deviceId", args.deviceId))
@@ -838,5 +839,6 @@ export const completeOrdersUpTo = mutation({
     return { success: true, count };
   }
 });
+
 
 
