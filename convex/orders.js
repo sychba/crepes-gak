@@ -69,6 +69,10 @@ export const create = mutation({
     ),
   },
   handler: async (ctx, args) => {
+    if (args.deliveryMethod === 'Lieferung') {
+      throw new Error("Lieferungen sind zurzeit deaktiviert. Nur noch Abholung vor Ort.");
+    }
+
     // 1. Check if device is blocked
     const isBlocked = await ctx.db
       .query("blockedDevices")

@@ -435,27 +435,7 @@ export default function Kasse({ token }) {
               />
             </div>
 
-            <div className="form-group">
-              <label>Lieferart</label>
-              <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.25rem', marginBottom: '0.25rem' }}>
-                <button
-                  type="button"
-                  className={`btn ${deliveryMethod === 'Abholung' ? 'btn-primary' : 'btn-secondary'}`}
-                  style={{ flex: 1, padding: '0.5rem', fontSize: '0.8rem', fontWeight: 'bold' }}
-                  onClick={() => setDeliveryMethod('Abholung')}
-                >
-                  🚶 Abholung
-                </button>
-                <button
-                  type="button"
-                  className={`btn ${deliveryMethod === 'Lieferung' ? 'btn-primary' : 'btn-secondary'}`}
-                  style={{ flex: 1, padding: '0.5rem', fontSize: '0.8rem', fontWeight: 'bold' }}
-                  onClick={() => setDeliveryMethod('Lieferung')}
-                >
-                  🚗 Lieferung
-                </button>
-              </div>
-            </div>
+
 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '1px solid var(--border-color)', paddingTop: '0.5rem', fontSize: '1.05rem' }}>
               <strong>Summe:</strong>

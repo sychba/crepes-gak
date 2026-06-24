@@ -53,7 +53,7 @@ export default function CustomerOrder({ navigate }) {
   const [submitting, setSubmitting] = useState(false);
   const [deviceId, setDeviceId] = useState('');
   const [errorMessage, setErrorMessage] = useState(null);
-  const [deliveryMethod, setDeliveryMethod] = useState('Lieferung');
+  const [deliveryMethod, setDeliveryMethod] = useState('Abholung');
   const [loyaltyCardId, setLoyaltyCardId] = useState(null);
 
   // Load loyalty card ID from localStorage on mount
@@ -591,39 +591,17 @@ export default function CustomerOrder({ navigate }) {
               </div>
 
               <div className="form-group">
-                <label>Lieferart</label>
-                <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.25rem', marginBottom: '0.5rem' }}>
-                  <button
-                    type="button"
-                    className={`btn ${deliveryMethod === 'Abholung' ? 'btn-primary' : 'btn-secondary'}`}
-                    style={{ flex: 1, padding: '0.5rem', fontSize: '0.85rem' }}
-                    onClick={() => setDeliveryMethod('Abholung')}
-                  >
-                    🚶 Abholung
-                  </button>
-                  <button
-                    type="button"
-                    className={`btn ${deliveryMethod === 'Lieferung' ? 'btn-primary' : 'btn-secondary'}`}
-                    style={{ flex: 1, padding: '0.5rem', fontSize: '0.85rem' }}
-                    onClick={() => setDeliveryMethod('Lieferung')}
-                  >
-                    🚗 Lieferung (kostenlos)
-                  </button>
-                </div>
-              </div>
-
-              <div className="form-group">
                 <label htmlFor="cust-class">
-                  Klasse / Ort {deliveryMethod === 'Lieferung' ? '*' : '(optional)'}
+                  Klasse / Ort (optional)
                 </label>
                 <input
                   id="cust-class"
                   type="text"
                   className="form-input"
-                  placeholder={deliveryMethod === 'Lieferung' ? 'z.B. Zimmer 104 oder Klasse 10b (erforderlich)' : 'z.B. 10b oder Lehrerzimmer'}
+                  placeholder="z.B. 10b oder Lehrerzimmer"
                   value={customerClass}
                   onChange={(e) => setCustomerClass(e.target.value)}
-                  required={deliveryMethod === 'Lieferung'}
+                  required={false}
                 />
               </div>
 

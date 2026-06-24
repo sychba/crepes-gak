@@ -5,7 +5,7 @@ import GerateManager from './GerateManager';
 import LoyaltyScanner from './LoyaltyScanner';
 import Stationen from './Stationen';
 import Dashboard from './Dashboard';
-import Lieferungen from './Lieferungen';
+
 
 // Premium Inline SVGs for Navigation Tabs
 const CookIcon = () => (
@@ -174,13 +174,7 @@ export default function Terminal({ navigate }) {
             <OverviewIcon />
             <span>Übersicht</span>
           </button>
-          <button
-            className={`terminal-tab-btn ${activeTab === 'lieferungen' ? 'active' : ''}`}
-            onClick={() => setActiveTab('lieferungen')}
-          >
-            <DeliveryIcon />
-            <span>Lieferungen</span>
-          </button>
+
           <button
             className={`terminal-tab-btn ${activeTab === 'kueche' ? 'active' : ''}`}
             onClick={() => setActiveTab('kueche')}
@@ -222,7 +216,7 @@ export default function Terminal({ navigate }) {
       <main className="main-content" style={{ padding: '1.5rem' }}>
         {activeTab === 'stationen' && <Stationen token={token} />}
         {activeTab === 'dashboard' && <Dashboard token={token} />}
-        {activeTab === 'lieferungen' && <Lieferungen token={token} />}
+
         {activeTab === 'kueche' && <Kueche token={token} />}
         {activeTab === 'kasse' && <Kasse token={token} />}
         {activeTab === 'gerate' && <GerateManager token={token} />}
