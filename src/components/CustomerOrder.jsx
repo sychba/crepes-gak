@@ -323,7 +323,7 @@ export default function CustomerOrder({ navigate }) {
   }, {});
 
   const cartCount = getCartCount();
-  const isShopClosed = true;
+  const isShopClosed = false;
 
   if (isShopClosed) {
     return (
