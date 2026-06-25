@@ -260,7 +260,7 @@ export default function Kasse({ token }) {
   const saleProducts = products.filter(p => p.category !== 'System');
 
   // Define a logical ordering of categories for standard POS layout
-  const categoryOrder = ['Crepes', 'Waffeln', 'Sandwiches', 'Getränke'];
+  const categoryOrder = ['Crepes', 'Waffeln', 'Getränke'];
   
   // Sort products so they flow in order of category, then by ID/price
   const sortedProducts = [...saleProducts].sort((a, b) => {

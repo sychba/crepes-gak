@@ -39,13 +39,7 @@ export const seed = mutation({
       { id: 'waffel-nutella', name: 'Waffel Nutella', price: 2.50, category: 'Waffeln', description: 'Warme Herzwaffel mit cremigem Nutella.', available: true },
       { id: 'waffel-zimt-zucker', name: 'Waffel Zimt & Zucker', price: 2.50, category: 'Waffeln', description: 'Warme Herzwaffel mit Zimt und Zucker.', available: true },
       { id: 'waffel-puderzucker', name: 'Waffel Puderzucker', price: 2.50, category: 'Waffeln', description: 'Warme Herzwaffel mit feinem Puderzucker.', available: true },
-      { id: 'waffel-apfelmus', name: 'Waffel Apfelmus', price: 2.50, category: 'Waffeln', description: 'Warme Herzwaffel mit feinem Apfelmus.', available: true },
-
-      // Sandwiches
-      { id: 'sandwich-cheese', name: 'Käse Sandwich', price: 2.50, category: 'Sandwiches', description: 'Knusprig getoastetes Sandwich mit viel geschmolzenem Käse.', available: true },
-      { id: 'sandwich-ham', name: 'Schinken Sandwich', price: 2.50, category: 'Sandwiches', description: 'Knusprig getoastetes Sandwich mit saftigem Schinken.', available: true },
-      { id: 'sandwich-cheese-ham', name: 'Käse-Schinken Sandwich', price: 3.00, category: 'Sandwiches', description: 'Knusprig getoastetes Sandwich mit viel geschmolzenem Käse und saftigem Schinken.', available: true },
-      { id: 'sandwich-schoko', name: 'Schoko Sandwich', price: 2.50, category: 'Sandwiches', description: 'Knusprig getoastetes Sandwich gefüllt mit cremigem Nutella.', available: true }
+      { id: 'waffel-apfelmus', name: 'Waffel Apfelmus', price: 2.50, category: 'Waffeln', description: 'Warme Herzwaffel mit feinem Apfelmus.', available: true }
     ];
 
     for (const prod of defaultProducts) {

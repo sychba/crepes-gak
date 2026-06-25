@@ -387,28 +387,6 @@ export default function Stationen({ token }) {
 
           <button 
             className="card" 
-            onClick={() => setSelectedStation('sandwiches')}
-            style={{ 
-              display: 'flex', 
-              flexDirection: 'column', 
-              alignItems: 'center', 
-              gap: '1rem', 
-              padding: '2.5rem', 
-              cursor: 'pointer',
-              border: '1px solid var(--border-color)',
-              background: 'var(--bg-secondary)',
-              textAlign: 'center'
-            }}
-          >
-            <span style={{ fontSize: '3.5rem' }}>🥪</span>
-            <h3 style={{ fontFamily: 'var(--font-display)', fontSize: '1.4rem' }}>Sandwich-Toast</h3>
-            <span className="status-badge zubereitung" style={{ fontSize: '0.8rem' }}>
-              Sandwich-Kategorie
-            </span>
-          </button>
-
-          <button 
-            className="card" 
             onClick={() => setSelectedStation('getraenke')}
             style={{ 
               display: 'flex', 
